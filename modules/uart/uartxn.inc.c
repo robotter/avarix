@@ -6,6 +6,7 @@
  * The XN_(p,s) macro must be defined before including.
  * It is automatically undefined at the end of this file.
  */
+#include <clock/defs.h>
 
 #define UARTXN(s) XN_(UART,s)
 #define uartXN(s) XN_(uart,s)
@@ -45,8 +46,8 @@ void uartXN(_init)(void)
 
 #define UART_BSEL \
       ((UARTXN(_BSCALE) >= 0) \
-       ? (uint16_t)( (float)(F_CPU) / ((1L<<UARTXN(_BSCALE)) * 16 * (unsigned long)UARTXN(_BAUDRATE)) - 1 ) \
-       : (uint16_t)( (1L<<-UARTXN(_BSCALE)) * (((float)(F_CPU) / (16 * (unsigned long)UARTXN(_BAUDRATE))) - 1) ) \
+       ? (uint16_t)( (float)(CLOCK_CPU_FREQ) / ((1L<<UARTXN(_BSCALE)) * 16 * (unsigned long)UARTXN(_BAUDRATE)) - 1 ) \
+       : (uint16_t)( (1L<<-UARTXN(_BSCALE)) * (((float)(CLOCK_CPU_FREQ) / (16 * (unsigned long)UARTXN(_BAUDRATE))) - 1) ) \
       )
   // baudrate, updated when BAUDCTRLA is written so set it after BAUDCTRLB
   uartXN_.usart->BAUDCTRLB = ((UART_BSEL >> 8) & 0x0F) | (UARTXN(_BSCALE) << USART_BSCALE_gp);
