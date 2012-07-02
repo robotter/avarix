@@ -12,7 +12,6 @@ GEN_SRCS = $(filter %.c,$(GEN_FILES))
 ## Target configuration
 
 MCU = atxmega128a1
-F_CPU = 32000000
 
 
 ## Build configuration

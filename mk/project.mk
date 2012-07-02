@@ -99,7 +99,6 @@ INCLUDE_DIRS += . $(ABS_AVARIX_DIR)/include $(ABS_AVARIX_DIR)/modules $(gen_dir)
 
 CPPFLAGS += -Wall $(if $(STD),-std=$(STD))
 CPPFLAGS += $(addprefix -I,$(INCLUDE_DIRS))
-CPPFLAGS += $(if $(F_CPU),-DF_CPU=$(F_CPU))
 CFLAGS += -O$(OPT)
 CFLAGS += -Wextra -Wno-unused-parameter -Wstrict-prototypes
 ASFLAGS +=
@@ -154,7 +153,6 @@ help:
 	@echo ""
 	@echo "Some configuration variables:"
 	@echo "  MCU      target type (-mcu option)"
-	@echo "  F_CPU    CPU frequency"
 	@echo "  OPT      optimization level (-O option)"
 	@echo "  STD      C standard (-std option)"
 	@echo ""
