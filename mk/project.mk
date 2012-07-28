@@ -214,11 +214,11 @@ size:
 # Usual object files
 
 $(COBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.c
-	@mkdir -p $(obj_dir)
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MD -MF $(@:.o=.d) -c $< -o $@
 
 $(AOBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.S
-	@mkdir -p $(obj_dir)
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
 
 # Other (final) outputs (.hex, .eep) from ELF
@@ -237,7 +237,7 @@ $(AOBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.S
 # Cleaning
 
 clean: clean-project clean-modules
-	-rmdir -p $(obj_dir) 2>/dev/null
+	-rmdir -p $(sort $(obj_dir) $(dir $(OBJS))) 2>/dev/null
 
 clean-project:
 	rm -f $(TARGET_OBJ) $(PROJECT_LIB) $(OUTPUTS) $(OBJS) $(DEPS) $(modules_deps)
