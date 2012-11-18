@@ -28,6 +28,7 @@ $(foreach m,$(new_modules),$(eval $(call append_module_deps,$m)))
 # remove duplicates and already processed modules
 next_modules := $(strip $(filter-out $(all_modules),$(sort $(next_modules))))
 
+.DEFAULT_GOAL := default
 
 ifeq ($(new_modules),)
 

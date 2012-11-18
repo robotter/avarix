@@ -6,6 +6,7 @@
 #   obj_dir
 #   gen_dir
 #   HOST
+.DEFAULT_GOAL = default
 -include $(AVARIX_DIR)/mk/common.mk
 include $(src_dir)/config.mk
 
