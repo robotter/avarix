@@ -11,8 +11,10 @@ STD ?= gnu99
 project_dir ?= .
 src_dir ?= $(project_dir)
 obj_dir ?= $(project_dir)/build
+gen_dir ?= $(obj_dir)/gen
 
-export HOST project_dir obj_dir
+
+export HOST project_dir obj_dir gen_dir
 export MCU
 
 
@@ -42,10 +44,13 @@ export modules_deps
 -include $(modules_deps)
 MODULES_PATHS = $(addprefix modules/,$(ALL_MODULES))
 
-COBJS = $(SRCS:%.c=$(obj_dir)/%.$(HOST).o)
+SRC_COBJS = $(SRCS:%.c=$(obj_dir)/%.$(HOST).o)
+GEN_COBJS = $(GEN_SRCS:%.c=$(obj_dir)/%.$(HOST).o)
+COBJS = $(SRC_COBJS) $(GEN_COBJS)
 AOBJS = $(ASRCS:%.S=$(obj_dir)/%.$(HOST).o)
 OBJS = $(COBJS) $(AOBJS)
 DEPS = $(COBJS:.o=.d)
+GEN_FILES_FULL = $(addprefix $(gen_dir)/,$(GEN_FILES))
 MODULES_LIBS = $(foreach m,$(MODULES_PATHS),$(obj_dir)/$(m).$(HOST).a)
 PROJECT_LIB = $(obj_dir)/$(TARGET).$(HOST).a
 
@@ -71,7 +76,8 @@ NM = nm
 TARGET_OBJ = $(TARGET)
 OUTPUTS = $(TARGET_OBJ)
 endif
-export CC AR
+PY_TEMPLATIZE = $(AVARIX_DIR)/mk/templatize.py
+export CC AR PY_TEMPLATIZE
 
 # On Windows, default find.exe is not the POSIX find
 ifeq ($(OS),Windows_NT)
@@ -84,10 +90,12 @@ else
 FIND_DIR_NAME = find $(1) -name $(2)
 endif
 
+-include $(AVARIX_DIR)/mk/common.mk
+
 
 ## Various flags
 
-INCLUDE_DIRS += . $(ABS_AVARIX_DIR)/include $(ABS_AVARIX_DIR)/modules
+INCLUDE_DIRS += . $(ABS_AVARIX_DIR)/include $(ABS_AVARIX_DIR)/modules $(gen_dir)/modules
 
 CPPFLAGS += -Wall $(if $(STD),-std=$(STD))
 CPPFLAGS += $(addprefix -I,$(INCLUDE_DIRS))
@@ -156,7 +164,7 @@ help:
 
 $(modules_deps):
 ifneq ($(use_deps),)
-	@mkdir -p $(obj_dir)
+	@mkdir -p $(obj_dir) $(gen_dir)
 	$(MAKE) -f $(AVARIX_DIR)/mk/moduledeps.mk new_modules='$(MODULES)'
 endif
 
@@ -169,14 +177,14 @@ $(obj_dir)/$(1).$(HOST).a: $(1)
 
 defaultconf-$(1):
 	$(MAKE) -f $(AVARIX_DIR)/mk/module.mk \
-		src_dir=$(AVARIX_DIR)/$(1) obj_dir=$(obj_dir)/$(1) \
+		src_dir=$(AVARIX_DIR)/$(1) obj_dir=$(obj_dir)/$(1) gen_dir=$(gen_dir)/$(1) \
 		defaultconf $(src_dir)
 endef
 $(foreach m,$(MODULES_PATHS),$(eval $(call module_lib_tpl,$m)))
 
 $(MODULES_PATHS):
 	$(MAKE) -f $(AVARIX_DIR)/mk/module.mk \
-		src_dir=$(AVARIX_DIR)/$@ obj_dir=$(obj_dir)/$@
+		src_dir=$(AVARIX_DIR)/$@ obj_dir=$(obj_dir)/$@ gen_dir=$(gen_dir)/$@
 
 defaultconf: $(addprefix defaultconf-,$(MODULES_PATHS))
 
@@ -195,7 +203,7 @@ list-modules:
 
 # Project outputs
 
-$(TARGET_OBJ): $(PROJECT_LIB) $(MODULES_LIBS)
+$(TARGET_OBJ): $(MODULES_LIBS) $(PROJECT_LIB)
 	$(CC) $(PROJECT_LIB) $(MODULES_LIBS) -o $@ $(LDFLAGS)
 
 # project objects, with renamed sections
@@ -211,9 +219,16 @@ size:
 	@$(SIZE) $(TARGET_OBJ)
 
 
+# Make sure to generate files first
+$(OBJS): $(GEN_FILES_FULL)
+
 # Usual object files
 
-$(COBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.c
+$(SRC_COBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MD -MF $(@:.o=.d) -c $< -o $@
+
+$(GEN_COBJS): $(obj_dir)/%.$(HOST).o: $(gen_dir)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MD -MF $(@:.o=.d) -c $< -o $@
 
@@ -237,10 +252,11 @@ $(AOBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.S
 # Cleaning
 
 clean: clean-project clean-modules
-	-rmdir -p $(sort $(obj_dir) $(dir $(OBJS))) 2>/dev/null
+	-rmdir -p $(sort $(obj_dir) $(gen_dir) $(dir $(OBJS) $(GEN_FILES_FULL))) 2>/dev/null
 
 clean-project:
-	rm -f $(TARGET_OBJ) $(PROJECT_LIB) $(OUTPUTS) $(OBJS) $(DEPS) $(modules_deps)
+	rm -f $(TARGET_OBJ) $(PROJECT_LIB) $(OUTPUTS) \
+		$(GEN_FILES_FULL) $(OBJS) $(DEPS) $(modules_deps)
 
 clean_modules_rules = $(addprefix clean-,$(MODULES_PATHS))
 
@@ -248,7 +264,7 @@ clean-modules: $(clean_modules_rules)
 
 
 $(clean_modules_rules): clean-%:
-	@$(MAKE) src_dir=$(AVARIX_DIR)/$* obj_dir=$(obj_dir)/$* \
+	@$(MAKE) src_dir=$(AVARIX_DIR)/$* obj_dir=$(obj_dir)/$* gen_dir=$(gen_dir)/$* \
 		-f $(AVARIX_DIR)/mk/module.mk clean
 
 

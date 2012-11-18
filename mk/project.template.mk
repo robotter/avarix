@@ -5,6 +5,8 @@ SRCS = $(wildcard *.c)
 ASRCS =
 TARGET = main
 MODULES = uart
+GEN_FILES =
+GEN_SRCS = $(filter %.c,$(GEN_FILES))
 
 
 ## Target configuration

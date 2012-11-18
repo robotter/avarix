@@ -8,6 +8,7 @@
 
 # The following variables must be set by the caller
 #   obj_dir
+#   gen_dir
 #   modules_deps
 # Each goal is a module name.
 
