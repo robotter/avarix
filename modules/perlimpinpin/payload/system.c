@@ -86,6 +86,20 @@ static const union {
 
 
 
+/** @brief Send a request system payload
+ *
+ * \e data must be suitable for \e sizeof().
+ */
+#define SEND_SYSTEM_REQUEST(intf,_dst,data)  do { \
+  const ppp_header_t header = { \
+    .plsize = sizeof(data), \
+    .src = intf->addr, \
+    .dst = _dst, \
+    .pltype = PPP_TYPE_SYSTEM, \
+  }; \
+  ppp_send_frame(intf, &header, data); \
+} while(0)
+
 /** @brief Send a reply to a system payload
  *
  * \e data must be suitable for \e sizeof().
@@ -250,6 +264,12 @@ void ppp_send_system_ack(ppp_intf_t *intf, bool ack)
 {
   const uint8_t data[] = { ack ? SYSTEM_RESPONSE(ACK) : SYSTEM_RESPONSE(NAK) };
   SEND_SYSTEM_RESPONSE(intf, data);
+}
+
+void ppp_send_system_reset(ppp_intf_t *intf)
+{
+  const uint8_t data[] = { SYSTEM_REQUEST(RESET) };
+  SEND_SYSTEM_REQUEST(intf, 0xFF, data);
 }
 
 
