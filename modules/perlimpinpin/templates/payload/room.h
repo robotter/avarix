@@ -4,8 +4,39 @@
 /** @file
  * @brief Perlimpinpin ROOM payload support
  *
+ * @note
  * This file is generated.
  * Generated symbols for a \e dummy command are provided.
+ *
+ *
+ * To use ROOM payloads:
+ *  - define a \ref room_message_handler_t "ROOM message handler"
+ *  - set it with room_set_message_handler()
+ *  - return the ppp_payload_handler_room() handler from the
+ *    \ref room_message_handler_t "PPP frame filter"
+ *
+ * Here is an example of a ROOM message handler:
+@code
+void room_message_handler(ppp_intf_t *intf, room_payload_t *pl)
+{
+  switch(pl->mid) {
+    case ROOM_MID_TEST_ORDER:
+      // ... process the order ...
+      ROOM_REPLY_TEST_ORDER(intf, pl); // send the reply
+      break;
+    case ROOM_MID_TEST_EVENT:
+      PPP_LOGF(intf, INFO, "received test_event: %d", pl->test_event.some_param);
+      break;
+    case ROOM_MID_SQUARE_COMMAND:
+      // send command result (compute square value)
+      ROOM_REPLY_SQUARE_COMMAND(intf, pl, pl->square_command.v * pl->square_command.v);
+      break;
+    default:
+      PPP_LOGF(intf, INFO, "unexpected ROOM message: %u", pl->mid);
+      break;
+  }
+}
+@endcode
  */
 #ifndef PERLIMPINPIN_PAYLOAD_ROOM_H__
 #define PERLIMPINPIN_PAYLOAD_ROOM_H__

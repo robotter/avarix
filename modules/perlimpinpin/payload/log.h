@@ -38,15 +38,18 @@ void ppp_send_logf(ppp_intf_t *intf, uint8_t dst, uint8_t sev, const char *fmt, 
   __attribute__((format(printf, 4, 5)));
 
 
-/** @brief Helper macro to broadcast a log message
+/** @brief Broadcast a log message
  *
  * \e sev is a severity name without the \c PPP_LOG_ prefix (e.g. \c ERROR).
  * \e msg must be a literal string. No ACK is requested.
+ *
+ * @note PPP_LOG is more efficient than PPP_LOGF when there is no parameter to
+ * format.
  */
 #define PPP_LOG(intf,sev,msg) \
     ppp_send_log(intf, 0xFF, PPP_LOG_##sev, msg, sizeof(msg)-1)
 
-/** @brief Helper macro to broadcast a printf-formatted log message
+/** @brief Broadcast a printf-formatted log message
  *
  * \e sev is a severity name without the \c PPP_LOG_ prefix (e.g. \c ERROR).
  */

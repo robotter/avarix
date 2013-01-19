@@ -1,5 +1,55 @@
 /** @defgroup perlimpinpin Perlimpinpin
  * @brief Perlimpinpin module
+ *
+ * Perlimpinpin (shorted as PPP) is a communication protocol. This module
+ * handles PPP communications through UART.
+ *
+ * There are three things to do to use PPP:
+ *  - define an implement \ref ppp_filter_cb_t "frame filter"
+ *  - initialize a \ref ppp_intf_t "PPP interface"
+ *  - call ppp_intf_update() regularly to process pending data
+ *
+ * The frame filter is called when a frame header is received. It returns the
+ * \ref ppp_payload_handler_t "handler" used to process the payload.
+ *
+@code
+ppp_payload_handler_t *ppp_filter(ppp_intf_t *intf)
+{
+  if(intf->rstate.header.dst != 0xFF && intf->rstate.header.dst != intf->addr) {
+    return NULL; // ignore frames we're not a recipient of
+  }
+  switch(intf->rstate.header.pltype) {
+    case PPP_TYPE_SYSTEM:
+      return ppp_payload_handler_system; // use predefined handler
+    case PPP_TYPE_DUMMY:
+      return my_dummy_handler; // custom handler
+    default:
+      return NULL; // ignore frames with unhandled type
+  }
+}
+
+int main(void)
+{
+  // usual initialization, including UART
+  clock_init();
+  uart_init();
+  PMIC.CTRL |= (PMIC_LOLVLEN_bm|PMIC_MEDLVLEN_bm|PMIC_HILVLEN_bm);
+
+  // initialize the PPP interface
+  ppp_intf_t intf;
+  intf.filter = ppp_filter; // our frame filter
+  intf.uart = uartC0; // UART from the UART module
+  intf.addr = 0x10; // interface node address
+  ppp_intf_init(&intf);
+
+  // send a system RESET to signal that we have booted
+  ppp_send_system_reset(&intf);
+  for(;;) {
+    // handle input frames
+    ppp_intf_update(&intf);
+  }
+}
+@endcode
  */
 //@{
 /**
