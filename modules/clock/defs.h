@@ -103,7 +103,11 @@
  */
 #define CLOCK_PLL_FAC
 
-/** @brief RTC clock source
+/** @name RTC configuration
+ */
+//@{
+
+/** @brief RTC source
  *
  * Value may be \ref CLOCK_SOURCE_RC32K, \ref CLOCK_SOURCE_XOSC, \ref
  * CLOCK_SOURCE_ULP or \ref CLOCK_SOURCE_NONE.
@@ -115,12 +119,28 @@
  */
 #define CLOCK_RTC_SOURCE
 
-/** @brief RTC clock source frequency, in Hz
+/** @brief RTC source frequency, in Hz
  *
  * Implied if \ref CLOCK_RTC_SOURCE is not \ref CLOCK_SOURCE_XOSC in which case
  * value must be 1024 or 32768.
  */
-#define CLOCK_SOURCE_FREQ
+#define CLOCK_RTC_SOURCE_FREQ
+
+/** @brief RTC prescaled frequency, in Hz
+ *
+ * Implied if \ref CLOCK_RTC_PRESCALER_DIV is defined.
+ * Defaults to \ref CLOCK_RTC_SOURCE_FREQ (no prescaling).
+ */
+#define CLOCK_RTC_FREQ
+
+/** @brief RTC prescaling factor
+ *
+ * Implied if \ref CLOCK_RTC_SOURCE_FREQ is defined.
+ * Defaults to 1 (no prescaling).
+ */
+#define CLOCK_RTC_PRESCALER_DIV
+
+//@}
 
 #else
 
@@ -252,6 +272,20 @@
 # endif
 #endif
 
+// Check and compute CLOCK_RTC_FREQ and CLOCK_RTC_PRESCALER_DIV
+#if CLOCK_RTC_SOURCE != CLOCK_RTC_NONE
+# ifdef CLOCK_RTC_PRESCALER_DIV
+#  ifndef CLOCK_RTC_FREQ
+#   define CLOCK_RTC_FREQ  CLOCK_RTC_SOURCE_FREQ / CLOCK_RTC_PRESCALER_DIV
+#  endif
+# elif (defined CLOCK_RTC_FREQ)
+#   define CLOCK_RTC_PRESCALER_DIV  CLOCK_RTC_SOURCE_FREQ / CLOCK_RTC_FREQ
+# else
+#  define CLOCK_RTC_PRESCALER_DIV  1
+#  define CLOCK_RTC_FREQ  CLOCK_RTC_SOURCE_FREQ
+# endif
+#endif
+
 
 // Check or compute \clk{CPU} and \clk{PER}
 #if !(defined CLOCK_CPU_FREQ) && (defined CLOCK_PER_FREQ)
@@ -338,6 +372,18 @@
 # error Invalid CLOCK_PRESCALER_B_DIV and CLOCK_PRESCALER_C_DIV values
 #endif
 
+#ifndef CLOCK_RTC_PRESCALER_DIV
+#elif CLOCK_RTC_PRESCALER_DIV == 1
+#elif CLOCK_RTC_PRESCALER_DIV == 2
+#elif CLOCK_RTC_PRESCALER_DIV == 8
+#elif CLOCK_RTC_PRESCALER_DIV == 16
+#elif CLOCK_RTC_PRESCALER_DIV == 64
+#elif CLOCK_RTC_PRESCALER_DIV == 256
+#elif CLOCK_RTC_PRESCALER_DIV == 1024
+#else
+# error Invalid CLOCK_RTC_PRESCALER_DIV value
+#endif
+
 // Check consistency between ratios and frequencies
 // Also detect rounding errors
 #if ((CLOCK_CPU_FREQ) * (CLOCK_PRESCALER_C_DIV)) != CLOCK_PER2_FREQ
@@ -346,6 +392,11 @@
 # error CLOCK_PER2_FREQ, CLOCK_PER4_FREQ and CLOCK_PRESCALER_B_DIV mismatch
 #elif ((CLOCK_PER4_FREQ) * (CLOCK_PRESCALER_A_DIV)) != CLOCK_SYS_FREQ
 # error CLOCK_PER4_FREQ, CLOCK_SYS_FREQ and CLOCK_PRESCALER_A_DIV mismatch
+#endif
+#ifdef CLOCK_RTC_FREQ
+# if ((CLOCK_RTC_FREQ) * (CLOCK_RTC_PRESCALER_DIV)) != CLOCK_RTC_SOURCE_FREQ
+#  error CLOCK_RTC_FREQ, CLOCK_RTC_SOURCE_FREQ and CLOCK_RTC_PRESCALER_DIV mismatch
+# endif
 #endif
 
 

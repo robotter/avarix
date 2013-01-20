@@ -147,7 +147,7 @@ void clock_init(void)
   } while( (CLK.CTRL & CLK_SCLKSEL_gm) != clksel );
 #undef clksel
 
-  // set RTC clock source
+  // set RTC clock source and RTC prescaler
 #if CLOCK_RTC_SOURCE != CLOCK_SOURCE_NONE
   CLK.RTCCTRL = CLK_RTCEN_bm |
 # if CLOCK_RTC_SOURCE == CLOCK_RTC_SOURCE_RC32K
@@ -160,6 +160,23 @@ void clock_init(void)
     CLK_RTCSRC_ULP_gc
 # endif
       ;
+  RTC.CTRL =
+#if CLOCK_RTC_PRESCALER_DIV == 1
+    RTC_PRESCALER_DIV1_gc
+#elif CLOCK_RTC_PRESCALER_DIV == 2
+    RTC_PRESCALER_DIV2_gc
+#elif CLOCK_RTC_PRESCALER_DIV == 8
+    RTC_PRESCALER_DIV8_gc
+#elif CLOCK_RTC_PRESCALER_DIV == 16
+    RTC_PRESCALER_DIV16_gc
+#elif CLOCK_RTC_PRESCALER_DIV == 64
+    RTC_PRESCALER_DIV64_gc
+#elif CLOCK_RTC_PRESCALER_DIV == 256
+    RTC_PRESCALER_DIV256_gc
+#elif CLOCK_RTC_PRESCALER_DIV == 1024
+    RTC_PRESCALER_DIV1024_gc
+#endif
+    ;
 #endif
 
 }
