@@ -177,8 +177,9 @@
 # endif
 # if CLOCK_SOURCE_FREQ < 400000
 #  error PLL source must be at least 0.4MHz
-# endif
-# if CLOCK_SYS_FREQ != ((CLOCK_SOURCE_FREQ) * (CLOCK_PLL_FAC))
+# elif CLOCK_SYS_FREQ < CLOCK_SOURCE_FREQ
+#  error PLLed frequency must be larger than source frequency
+# elif CLOCK_SYS_FREQ != ((CLOCK_SOURCE_FREQ) * (CLOCK_PLL_FAC))
 #  error CLOCK_PLL_FAC is not an integer
 # endif
 # if CLOCK_PLL_FAC < 1 || CLOCK_PLL_FAC > 31
