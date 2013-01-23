@@ -97,6 +97,9 @@
  *
  * Value may be implied if \ref CLOCK_SOURCE_FREQ and \ref CLOCK_SYS_FREQ do
  * not match.
+ *
+ * @note If \ref CLOCK_SOURCE is \ref CLOCK_SOURCE_RC32M, the PLL applies on
+ * the source frequency divided by 4.
  */
 #define CLOCK_PLL_FAC
 
@@ -156,11 +159,16 @@
 #endif
 
 // Handle PLL, compute \cpu{SYS}
+#if CLOCK_SOURCE == CLOCK_SOURCE_RC32M
+# define CLOCK_PLL_SOURCE_FREQ_ (CLOCK_SOURCE_FREQ/4)
+#else
+# define CLOCK_PLL_SOURCE_FREQ_ CLOCK_SOURCE_FREQ
+#endif
 #ifdef CLOCK_PLL_FAC
-# define CLOCK_SYS_FREQ ((CLOCK_SOURCE_FREQ) * (CLOCK_PLL_FAC))
+# define CLOCK_SYS_FREQ ((CLOCK_PLL_SOURCE_FREQ_) * (CLOCK_PLL_FAC))
 #elif (defined CLOCK_SYS_FREQ)
 # if CLOCK_SYS_FREQ != CLOCK_SOURCE_FREQ
-#  define CLOCK_PLL_FAC ((CLOCK_SYS_FREQ) / (CLOCK_SOURCE_FREQ))
+#  define CLOCK_PLL_FAC ((CLOCK_SYS_FREQ) / (CLOCK_PLL_SOURCE_FREQ_))
 # endif
 #else
 # define CLOCK_SYS_FREQ CLOCK_SOURCE_FREQ
@@ -177,9 +185,9 @@
 # endif
 # if CLOCK_SOURCE_FREQ < 400000
 #  error PLL source must be at least 0.4MHz
-# elif CLOCK_SYS_FREQ < CLOCK_SOURCE_FREQ
+# elif CLOCK_SYS_FREQ < CLOCK_PLL_SOURCE_FREQ_
 #  error PLLed frequency must be larger than source frequency
-# elif CLOCK_SYS_FREQ != ((CLOCK_SOURCE_FREQ) * (CLOCK_PLL_FAC))
+# elif CLOCK_SYS_FREQ != ((CLOCK_PLL_SOURCE_FREQ_) * (CLOCK_PLL_FAC))
 #  error CLOCK_PLL_FAC is not an integer
 # endif
 # if CLOCK_PLL_FAC < 1 || CLOCK_PLL_FAC > 31
