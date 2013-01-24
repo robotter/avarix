@@ -79,7 +79,7 @@ void clock_init(void)
 
 #ifdef CLOCK_PLL_FAC
   // Configure and enable PLL
-  CLK.PLLCTRL = (CLOCK_PLL_FAC << OSC_PLLFAC_gp) |
+  OSC.PLLCTRL = (CLOCK_PLL_FAC << OSC_PLLFAC_gp) |
 # if CLOCK_SOURCE == CLOCK_SOURCE_RC2M
     OSC_PLLSRC_RC2M_gc
 # elif CLOCK_SOURCE == CLOCK_SOURCE_RC32M
