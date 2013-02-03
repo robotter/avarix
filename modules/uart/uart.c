@@ -4,16 +4,13 @@
  */
 #include <stdbool.h>
 #include <util/atomic.h>
+#include <avarix.h>
 #include "uart.h"
 
 // Configuration checks
 
 #ifdef UARTxn_ENABLED
 # warning UARTxn_ENABLED still defined, 'xn' should be replaced in configuration template
-#endif
-
-#if UART_INTLVL != 1 && UART_INTLVL != 2 && UART_INTLVL != 3
-# error Invalid UART_INTLVL, must be 1, 2 or 3
 #endif
 
 

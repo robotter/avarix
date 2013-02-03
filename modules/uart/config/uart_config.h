@@ -25,10 +25,10 @@
 /// Enable UARTxn
 #define UARTxn_ENABLED
 
-/** @brief Interrupt level (1, 2 or 3)
+/** @brief Interrupt level (an \ref intlvl_t value)
  * @note Global configuration only.
  */
-#define UART_INTLVL  3
+#define UART_INTLVL  INTLVL_HI
 
 //@}
 //@}
