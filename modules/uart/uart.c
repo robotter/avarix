@@ -15,6 +15,12 @@
 
 
 /** @brief Circular FIFO buffer for UART data
+ *
+ * If head and tail are equal, the FIFO is empty.
+ * The tail cannot catch up with the head by pushing; the last byte (before the
+ * head) is always free.
+ * This means the buffer is never completely filled. Its actual capacity is one
+ * less than the buffer length.
  */
 typedef struct {
   uint8_t *head;  ///< Pointer to the next byte to pop
