@@ -16,8 +16,17 @@
 
 
 
-/// Motor PWM data
-typedef struct pwm_motor_struct pwm_motor_t;
+/** @brief Motor PWM data
+ * @note Fields are private and should not be accessed directly.
+ */
+typedef struct {
+  TC0_t *tc;  ///< timer used to generate the PWM signal
+  uint8_t channel;  ///< timer channel used for PWM output, from 0 to 3
+  PORT_t *signport;  ///< port of sign output, \e NULL if not used
+  uint8_t signpin;  ///< pin of sign outpt, from 0 to 7
+  uint16_t vmin;  ///< duty cycle range, lower bound, in ticks
+  uint16_t vmax;  ///< duty cycle range, upper bound, in ticks
+} pwm_motor_t;
 
 
 /** @brief Initialize motor PWM

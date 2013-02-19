@@ -5,11 +5,6 @@
 #include "quadra.h"
 
 
-struct quadra_struct {
-  TC1_t *tc;  ///< timer used to decode the quadrature signal
-};
-
-
 void quadra_init(quadra_t *q, TC1_t *tc, uint8_t evch, PORT_t *port0, uint8_t pin0, PORT_t *port90, uint8_t pin90, uint8_t samples)
 {
   // copy parameters to internal structure

@@ -7,16 +7,6 @@
 #include "motor.h"
 
 
-struct pwm_motor_struct {
-  TC0_t *tc;  ///< timer used to generate the PWM signal
-  uint8_t channel;  ///< timer channel used for PWM output, from 0 to 3
-  PORT_t *signport;  ///< port of sign output, \e NULL if not used
-  uint8_t signpin;  ///< pin of sign outpt, from 0 to 7
-  uint16_t vmin;  ///< duty cycle range, lower bound, in ticks
-  uint16_t vmax;  ///< duty cycle range, upper bound, in ticks
-};
-
-
 void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, PORT_t *pwmport, uint8_t pwmpin, PORT_t *signport, uint8_t signpin)
 {
   // initialize internal structure

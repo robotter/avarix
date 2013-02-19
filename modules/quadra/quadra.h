@@ -16,8 +16,12 @@
 #include <avr/io.h>
 
 
-/// Quadrature decoder data
-typedef struct quadra_struct quadra_t;
+/** Quadrature decoder data
+ * @note Fields are private and should not be accessed directly.
+ */
+typedef struct {
+  TC1_t *tc;  ///< timer used to decode the quadrature signal
+} quadra_t;
 
 
 /** @brief Initialize quadrature decoder
