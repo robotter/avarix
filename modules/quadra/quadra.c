@@ -25,13 +25,13 @@ void quadra_init(quadra_t *q, TC1_t *tc, uint8_t evch, PORT_t *port0, uint8_t pi
 }
 
 
-uint16_t quad_get(quadra_t *q)
+uint16_t quadra_get(quadra_t *q)
 {
   return q->tc->CNT;
 }
 
 
-void quad_reset(quadra_t *q, uint16_t value)
+void quadra_reset(quadra_t *q, uint16_t value)
 {
   q->tc->CNT = value;
 }

@@ -44,10 +44,10 @@ typedef struct {
 void quadra_init(quadra_t *q, TC1_t *tc, uint8_t evch, PORT_t *port0, uint8_t pin0, PORT_t *port90, uint8_t pin90, uint8_t samples);
 
 /// Get the current decoder value
-uint16_t quad_get(quadra_t *q);
+uint16_t quadra_get(quadra_t *q);
 
 /// Reset the decoder value
-void quad_reset(quadra_t *q, uint16_t value);
+void quadra_reset(quadra_t *q, uint16_t value);
 
 
 #endif
