@@ -13,6 +13,13 @@
 # warning UARTxn_ENABLED still defined, 'xn' should be replaced in configuration template
 #endif
 
+// Detect when at least one uart is enabled
+#define UART_EXPR(xn)  +1
+#if (0 UART_ALL_APPLY_EXPR(UART_EXPR))
+#define UART_HAS_UART_ENABLED
+#endif
+#undef UART_EXPR
+
 
 /** @brief Circular FIFO buffer for UART data
  *
@@ -42,11 +49,13 @@ struct uart_struct {
  */
 //@{
 
+#ifdef UART_HAS_UART_ENABLED
 /// Initialize a FIFO buffer
 static void uart_buf_init(uart_buf_t *b)
 {
   b->head = b->tail = b->data;
 }
+#endif
 
 /// Get pointer to the end of a FIFO buffer
 static uint8_t *uart_buf_end(const uart_buf_t *b)
