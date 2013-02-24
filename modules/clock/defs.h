@@ -59,6 +59,12 @@
  */
 #define CLOCK_CPU_FREQ
 
+/** @brief Alias provided for use with AVR-libc.
+ *
+ * \e F_CPU is required by some headers such as util/delay.h.
+ */
+#define F_CPU  CLOCK_CPU_FREQ
+
 /** @brief Peripheral clock frequency (\clk{PER}), in Hz
  *
  * This value is equal to \ref CLOCK_CPU_FREQ.
@@ -298,6 +304,8 @@
 #if CLOCK_CPU_FREQ != CLOCK_PER_FREQ
 # error CLOCK_CPU_FREQ and CLOCK_PER_FREQ must be equal
 #endif
+// Define F_CPU alias
+#define F_CPU  CLOCK_CPU_FREQ
 
 
 // Get prescaler ratios from frequencies when possible
