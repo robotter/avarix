@@ -121,6 +121,10 @@ CPPFLAGS += -DHOST_VERSION
 
 endif
 
+ifneq ($(filter-out no,$(MATH_LIB)),)
+LDFLAGS += -lm
+endif
+
 export CPPFLAGS CFLAGS ASFLAGS LDFLAGS
 
 
