@@ -223,6 +223,7 @@ size:
 
 # Make sure to generate files first
 $(OBJS): $(GEN_FILES_FULL)
+$(OBJS): $(MODULES_LIBS)
 
 # Usual object files
 
