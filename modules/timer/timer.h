@@ -20,7 +20,7 @@
 
 #include <avr/io.h>
 #include <stdint.h>
-#include <avarix.h>
+#include <avarix/intlvl.h>
 #include <clock/defs.h>
 #include "timer_config.h"
 
@@ -174,7 +174,7 @@ TC0_t *timer_get_tc(const timer_t *t);
  * @param t  timer to use
  * @param ch  timer channel to use
  * @param period  event period in ticks
- * @param intlvl  event priority level (1, 2 or 3)
+ * @param intlvl  event priority level
  * @param cb  callback to execute
  *
  * @note If \e period is 0, the actual period will be 0x10000 (maximum value).

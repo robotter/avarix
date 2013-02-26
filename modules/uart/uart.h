@@ -34,6 +34,7 @@
 #include <avr/io.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <avarix/intlvl.h>
 #include "uart_config.h"
 
 

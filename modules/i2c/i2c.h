@@ -10,7 +10,7 @@
 #define I2C_H__
 
 #include <avr/io.h>
-#include <avarix.h>
+#include <avarix/intlvl.h>
 #include <stdint.h>
 
 
