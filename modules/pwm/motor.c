@@ -7,20 +7,19 @@
 #include "motor.h"
 
 
-void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, PORT_t *pwmport, uint8_t pwmpin, PORT_t *signport, uint8_t signpin)
+void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, portpin_t signpp)
 {
   // initialize internal structure
   pwm->tc = tc;
   pwm->channel = channel >= 'A' && channel <= 'D' ? channel - 'A' : 0;
-  pwm->signport = signport;
-  pwm->signpin = signpin > 7 ? signpin : 0;
+  pwm->signpp = signpp;
   pwm->vmin = 0;
   pwm->vmax = PWM_MOTOR_MAX;
 
   // configure output pins
-  pwmport->DIRSET = (1 << pwmpin);
-  if(signport) {
-    signport->DIRSET = (1 << signpin);
+  PORTPIN_DIRSET(&pwmpp);
+  if(signpp.port) {
+    PORTPIN_DIRSET(&signpp);
   }
 
   // configure the timer/counter
@@ -51,11 +50,11 @@ void pwm_motor_set(pwm_motor_t *pwm, int16_t v)
 {
   uint16_t abs = v < 0 ? -v : v;
   (&pwm->tc->CCA)[pwm->channel] = pwm->vmin + (uint16_t)(((uint32_t)abs*(pwm->vmax-pwm->vmin))/((uint16_t)PWM_MOTOR_MAX+1));
-  if(pwm->signport) {
+  if(pwm->signpp.port) {
     if(v < 0) {
-      pwm->signport->OUTCLR = (1 << pwm->signpin);
+      PORTPIN_OUTCLR(&pwm->signpp);
     } else {
-      pwm->signport->OUTSET = (1 << pwm->signpin);
+      PORTPIN_OUTSET(&pwm->signpp);
     }
   }
 }

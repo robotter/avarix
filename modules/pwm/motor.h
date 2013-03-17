@@ -10,6 +10,7 @@
 #define PWM_MOTOR_H__
 
 #include <avr/io.h>
+#include <avarix/portpin.h>
 
 /// Maximum value of PWM duty cycle
 #define PWM_MOTOR_MAX  32767
@@ -22,8 +23,7 @@
 typedef struct {
   TC0_t *tc;  ///< timer used to generate the PWM signal
   uint8_t channel;  ///< timer channel used for PWM output, from 0 to 3
-  PORT_t *signport;  ///< port of sign output, \e NULL if not used
-  uint8_t signpin;  ///< pin of sign outpt, from 0 to 7
+  portpin_t signpp;  ///< port pin of sign output (optional)
   uint16_t vmin;  ///< duty cycle range, lower bound, in ticks
   uint16_t vmax;  ///< duty cycle range, upper bound, in ticks
 } pwm_motor_t;
@@ -34,16 +34,13 @@ typedef struct {
  * @param pwm  motor PWM to initialize
  * @param tc  timer to use (can also be a pointer to a \e TC1_t)
  * @param channel  timer channel to use, letter from A to D
- * @param pwmport  port of PWM output
- * @param pwmpin  pin of PWM outpt, from 0 to 7
- * @param signport  port of sign output, \e NULL if not used
- * @param signpin  pin of sign outpt, from 0 to 7
+ * @param pwmpp  port pin of PWM output
+ * @param signpp  port pin of sign output, \ref PORTPIN_NONE if not used
  *
- * \e pwmport and \e pwmpin depends on the XMEGA device and must match
- * \e tc and \e channel.
+ * \e pwmpp depends on the XMEGA device and must match \e tc and \e channel.
  * For timer \e TCxn, channel \e y it must designates pin \e OCny on port \e x.
  */
-void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, PORT_t *pwmport, uint8_t pwmpin, PORT_t *signport, uint8_t signpin);
+void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, portpin_t signpp);
 
 /** @brief Set motor PWM output frequency, in hertz
  *
