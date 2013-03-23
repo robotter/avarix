@@ -27,8 +27,8 @@ typedef struct {
 /// Return a portpin_t for PORTx, pin n.
 #define PORTPIN(x,n)  ((portpin_t){ &PORTX_(x), n })
 
-/// Unset \ref portpin_t value (port set to \e NULL)
-#define PORTPIN_NONE  ((portpin_t){ NULL, 0 })
+/// Unset \ref portpin_t value (port set to 0)
+#define PORTPIN_NONE  ((portpin_t){ 0, 0 })
 
 
 /** @name Update pin bit of port registers */
