@@ -8,6 +8,7 @@
 
 #include <avr/io.h>
 #include <stdint.h>
+#include "intlvl.h"
 
 
 /// Pin of a port
@@ -64,6 +65,20 @@ typedef struct {
 
 /// Event Channel multiplexer input selection for the port pin
 #define PORTPIN_EVSYS_CHMUX(pp)  (EVSYS_CHMUX_PORTA_PIN0_gc + ((pp)->port-&PORTA) * 8 + (pp)->pin)
+
+/** @brief Enable port pin interrupt
+ *
+ * @param pp  port pin to use
+ * @param n  interrupt number (0 or 1)
+ * @param lvl  interrupt level
+ */
+inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
+{
+  pp->port->INTFLAGS &= ~(1 << n);
+  (&pp->port->INT0MASK)[n] |= (1 << pp->pin);
+  pp->port->INTCTRL &= ~(PORT_INT0LVL_gm << 2*n);
+  pp->port->INTCTRL |= (lvl << 2*n);
+}
 
 
 #endif
