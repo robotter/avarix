@@ -35,27 +35,18 @@ typedef struct {
 /** @name Update pin bit of port registers */
 //@{
 
-/// Generic macro to set a port register to the pin bitmask
-#define PORTPIN_REGSET(pp,r)  ((pp)->port->r = (1 << (pp)->pin))
-
 /// Set port pin data direction
-#define PORTPIN_DIRSET(pp)  PORTPIN_REGSET(pp, DIRSET)
+static inline void portpin_dirset(const portpin_t *pp) { pp->port->DIRSET = (1 << pp->pin); }
 /// Clear port pin data direction
-#define PORTPIN_DIRCLR(pp)  PORTPIN_REGSET(pp, DIRCLR)
+static inline void portpin_dirclr(const portpin_t *pp) { pp->port->DIRCLR = (1 << pp->pin); }
 /// Toggle port pin data direction
-#define PORTPIN_DIRTGL(pp)  PORTPIN_REGSET(pp, DIRTGL)
+static inline void portpin_dirtgl(const portpin_t *pp) { pp->port->DIRTGL = (1 << pp->pin); }
 /// Set port pin output
-#define PORTPIN_OUTSET(pp)  PORTPIN_REGSET(pp, OUTSET)
+static inline void portpin_outset(const portpin_t *pp) { pp->port->OUTSET = (1 << pp->pin); }
 /// Clear port pin output
-#define PORTPIN_OUTCLR(pp)  PORTPIN_REGSET(pp, OUTCLR)
+static inline void portpin_outclr(const portpin_t *pp) { pp->port->OUTCLR = (1 << pp->pin); }
 /// Toggle port ping output
-#define PORTPIN_OUTTGL(pp)  PORTPIN_REGSET(pp, OUTTGL)
-/// Set port pin intput
-#define PORTPIN_INSET(pp)  PORTPIN_REGSET(pp, INSET)
-/// Clear port pin intput
-#define PORTPIN_INCLR(pp)  PORTPIN_REGSET(pp, INCLR)
-/// Toggle port ping intput
-#define PORTPIN_INTGL(pp)  PORTPIN_REGSET(pp, INTGL)
+static inline void portpin_outtgl(const portpin_t *pp) { pp->port->OUTTGL = (1 << pp->pin); }
 
 //@}
 
@@ -72,6 +63,7 @@ typedef struct {
  * @param n  interrupt number (0 or 1)
  * @param lvl  interrupt level
  */
+static inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl);
 inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 {
   pp->port->INTFLAGS &= ~(1 << n);
