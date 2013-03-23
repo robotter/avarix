@@ -17,9 +17,9 @@ void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, 
   pwm->vmax = PWM_MOTOR_MAX;
 
   // configure output pins
-  PORTPIN_DIRSET(&pwmpp);
+  portpin_dirset(&pwmpp);
   if(signpp.port) {
-    PORTPIN_DIRSET(&signpp);
+    portpin_dirset(&signpp);
   }
 
   // configure the timer/counter
@@ -52,9 +52,9 @@ void pwm_motor_set(pwm_motor_t *pwm, int16_t v)
   (&pwm->tc->CCA)[pwm->channel] = pwm->vmin + (uint16_t)(((uint32_t)abs*(pwm->vmax-pwm->vmin))/((uint16_t)PWM_MOTOR_MAX+1));
   if(pwm->signpp.port) {
     if(v < 0) {
-      PORTPIN_OUTCLR(&pwm->signpp);
+      portpin_outclr(&pwm->signpp);
     } else {
-      PORTPIN_OUTSET(&pwm->signpp);
+      portpin_outset(&pwm->signpp);
     }
   }
 }

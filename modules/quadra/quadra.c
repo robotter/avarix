@@ -11,8 +11,8 @@ void quadra_init(quadra_t *q, TC1_t *tc, uint8_t evch, portpin_t pp0, portpin_t 
   q->tc = tc;
 
   // configure input pins
-  PORTPIN_DIRCLR(&pp0);
-  PORTPIN_DIRCLR(&pp90);
+  portpin_dirclr(&pp0);
+  portpin_dirclr(&pp90);
   PORTPIN_CTRL(&pp0) = (PORTPIN_CTRL(&pp0) & ~PORT_ISC_gm) | PORT_ISC_LEVEL_gc;
   PORTPIN_CTRL(&pp90) = (PORTPIN_CTRL(&pp90) & ~PORT_ISC_gm) | PORT_ISC_LEVEL_gc;
 
