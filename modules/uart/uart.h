@@ -22,6 +22,42 @@
  * streams.
  *
  * @sa \reflibc{group__avr__stdio.html,Standard I/O facilities} in avr-libc documentation.
+ *
+ *
+ * @par Example
+ *
+@code
+#include <avarix/intlvl.h>
+#include <clock/clock.h>
+#include <uart/uart.h>
+
+int main(void)
+{
+  clock_init();
+  uart_init();
+  uart_fopen(uartC0); // use UARTC0 as stdin/stdout
+  INTLVL_ENABLE_ALL();
+
+  // wait a bit for one byte at startup
+  for(int i=0; i<100; i++) {
+    int c = uart_recv_nowait(uartC0);
+    if(c != -1) {
+      printf("received %d at startup\n", c); // this will be sent on UARTC0
+      break;
+    }
+  }
+
+  for(;;) {
+    // convert received data to lowercase
+    int c = uart_recv(uartC0);
+    if(c >= 'A' && c <= 'Z') {
+      c |= ' ';
+    }
+    uart_send(uartC0, c);
+  }
+}
+
+@endcode
  */
 //@{
 /**
