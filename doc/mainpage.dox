@@ -1,0 +1,105 @@
+/**
+
+@mainpage Avarix
+
+Avarix is a library and project environnement for Atmel XMEGA microcontrollers.
+It relies on <a href="http://www.nongnu.org/avr-libc/">AVR Libc</a> which
+itself is used with GCC.
+
+
+@section project Projects
+
+A project is a set of source files used to generate the binary code uploaded to
+the target device.
+
+A project uses the following files:
+ - \c Makefile -- build configuration, module dependencies, etc.
+ - \c *_config.h -- module configuration headers
+ - \c *.c, \c *.h -- C source files of the project
+
+A sample \c Makefile can is available at \c mk/project.template.mk.
+
+Module configuration headers are C headers that contain module static
+configuration. Some modules do not need a configuration header. Default
+configuration files can be created by running <tt>make defaultconf</tt>.
+
+@note
+Module configuration macros must be defined in the associated \c *_config.h.
+
+
+By default, all intermediate build files are put in a \c build/ subdirectory.
+
+
+@subsection new_project Starting a new project
+
+First, create a new directory, copy \c mk/project.template.mk in it with the
+name \c Makefile. The created directory is the project directory.
+
+Edit the freshly copied \c Makefile to configure your project. Make sure to
+check the following variables:
+ - \c SRCS -- C object files to compile (the default uses all \c .c files in the
+   directory)
+ - \c MODULES -- name of modules your project depends on (module
+   inter-dependencies are automatically handled)
+ - \c MCU -- MCU type of your device, GCC's \c -mmcu option value
+   (run <tt>avr-gcc \--help=target</tt> for a list of supported values)
+ - final \c include directive, it must point point to Avarix' \c mk/project.mk
+   file
+
+@note
+After modifying your \c Makefile you should run <tt>make clean</tt> to start
+with a fresh build.
+
+Start writing your project source code. Avarix' \c modules/ directory is in the
+include path. Thus <tt>\#include <mymodule/file.h></tt> will include
+\c modules/mymodule/file.h.
+
+To configure modules used in your project, run <tt>make defaultconf</tt> to
+generate default module configuration headers and edit them.
+
+Once your code is ready, run <tt>make</tt> to build. This will generate the
+following files in the project directory:
+ - \c build/ -- directory with all intermediate build files (\c *.o, etc.)
+ - \c main.elf -- ELF binary file (used with GDB for instance)
+ - \c main.hex -- flash content in HEX format
+ - \c main.eep -- EEPROM content in HEX format
+
+
+@section module Modules
+
+Modules are like mini-libraries for the devices. They provide APIs for XMEGA
+peripherals, specific hardware components, high-level features, etc.
+
+Modules source files are located in the \c modules/ directory. Each module has
+its own (sub)directory in it.
+
+A module use the following files:
+ - \c config.mk -- a Makefile-like script with build configuration
+ - \c config/ -- a directory with default configuration headers (optional)
+ - \c *.c, \c *.h -- C source files of the module
+
+
+@subsection new_module Adding a new module
+
+First, create a new directory in \c modules/ with an expressive and suitable
+name, for instance \c mymodule.
+
+Create a \c config.mk file in it with the following content:
+\code
+SRCS = mymodule.c  # this would be your module source file
+MODULES = clock  # modules your module depends on
+\endcode
+
+Implement your module in \c mymodule.c and \c mymodule.h.
+(Source filenames names are up to you. Usually, for modules with a single
+source file, the module name is used.)
+
+If your module needs a configuration header, create a
+\c config/mymodule_config.h file and put default configuration in it.
+In your module, include the configuration file with
+<tt>\#include "mymodule_config.h"</tt>.
+
+@note
+Feel free to look at existing modules for examples and advanced use.
+
+*/
