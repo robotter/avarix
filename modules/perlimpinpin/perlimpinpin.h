@@ -33,7 +33,7 @@ int main(void)
   // usual initialization, including UART
   clock_init();
   uart_init();
-  PMIC.CTRL |= (PMIC_LOLVLEN_bm|PMIC_MEDLVLEN_bm|PMIC_HILVLEN_bm);
+  INTLVL_ENABLE_ALL();
 
   // initialize the PPP interface
   ppp_intf_t intf;
