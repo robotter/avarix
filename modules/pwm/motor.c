@@ -7,20 +7,17 @@
 #include "motor.h"
 
 
-void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, portpin_t signpp)
+void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, pwm_motor_sign_cb set_sign)
 {
   // initialize internal structure
   pwm->tc = tc;
   pwm->channel = channel >= 'A' && channel <= 'D' ? channel - 'A' : 0;
-  pwm->signpp = signpp;
+  pwm->set_sign = set_sign;
   pwm->vmin = 0;
   pwm->vmax = PWM_MOTOR_MAX;
 
   // configure output pins
   portpin_dirset(&pwmpp);
-  if(signpp.port) {
-    portpin_dirset(&signpp);
-  }
 
   // configure the timer/counter
   (&tc->CCA)[pwm->channel] = 0; // init duty cycle to the minimum
@@ -50,12 +47,8 @@ void pwm_motor_set(pwm_motor_t *pwm, int16_t v)
 {
   uint16_t abs = v < 0 ? -v : v;
   (&pwm->tc->CCA)[pwm->channel] = pwm->vmin + (uint16_t)(((uint32_t)abs*(pwm->vmax-pwm->vmin))/((uint16_t)PWM_MOTOR_MAX+1));
-  if(pwm->signpp.port) {
-    if(v < 0) {
-      portpin_outclr(&pwm->signpp);
-    } else {
-      portpin_outset(&pwm->signpp);
-    }
+  if(pwm->set_sign) {
+    pwm->set_sign(v >= 0);
   }
 }
 
