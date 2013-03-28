@@ -42,7 +42,7 @@ typedef struct {
  * @param tc  timer to use (can also be a pointer to a \e TC1_t)
  * @param channel  timer channel to use, letter from A to D
  * @param pwmpp  port pin of PWM output
- * @param on_sign  callback to call on sign update (optional)
+ * @param set_sign  callback to call on sign update (optional)
  *
  * \e pwmpp depends on the XMEGA device and must match \e tc and \e channel.
  * For timer \e TCxn, channel \e y it must designates pin \e OCny on port \e x.
