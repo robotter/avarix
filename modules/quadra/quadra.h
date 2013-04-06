@@ -1,7 +1,7 @@
 /** @defgroup quadra Quadra
  * @brief Quadrature decoder
  *
- * This module is intended to be used for motor coders.
+ * This module is intended to be used for motor enccoders.
  *
  * Decoded value is a 16-bit value which can overflow or underflow.
  */

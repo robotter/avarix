@@ -17,7 +17,7 @@ A project uses the following files:
  - \c *_config.h -- module configuration headers
  - \c *.c, \c *.h -- C source files of the project
 
-A sample \c Makefile can is available at \c mk/project.template.mk.
+A sample \c Makefile is available at \c mk/project.template.mk.
 
 Module configuration headers are C headers that contain module static
 configuration. Some modules do not need a configuration header. Default
