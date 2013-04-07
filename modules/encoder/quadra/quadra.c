@@ -5,10 +5,12 @@
 #include "quadra.h"
 
 
-void quadra_init(quadra_t *q, TC1_t *tc, uint8_t evch, portpin_t pp0, portpin_t pp90, uint8_t samples)
+void quadra_init(quadra_t *enc, TC1_t *tc, uint8_t evch, portpin_t pp0, portpin_t pp90, uint8_t samples)
 {
   // copy parameters to internal structure
-  q->tc = tc;
+  enc->tc = tc;
+  enc->capture = 0;
+  enc->value = 0;
 
   // configure input pins
   portpin_dirclr(&pp0);
@@ -25,15 +27,33 @@ void quadra_init(quadra_t *q, TC1_t *tc, uint8_t evch, portpin_t pp0, portpin_t 
 }
 
 
-uint16_t quadra_get(quadra_t *q)
+void quadra_update(quadra_t *enc)
 {
-  return q->tc->CNT;
+  // capture a new value
+  uint16_t capture = enc->tc->CNT;
+
+  // update encoder state
+  uint16_t diff = capture - enc->capture;
+  enc->capture = capture;
+  INTLVL_DISABLE_BLOCK(INTLVL_HI) {
+    enc->value += (int16_t)diff;
+  }
 }
 
 
-void quadra_reset(quadra_t *q, uint16_t value)
+int32_t quadra_get_value(quadra_t *enc)
 {
-  q->tc->CNT = value;
+  int32_t ret;
+  INTLVL_DISABLE_BLOCK(INTLVL_HI) {
+    ret = enc->value;
+  }
+  return ret;
+}
+
+
+void quadra_set_value(quadra_t *enc, int32_t v)
+{
+  enc->value = v;
 }
 
 
