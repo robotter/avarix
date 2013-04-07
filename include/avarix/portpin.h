@@ -73,5 +73,23 @@ inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 }
 
 
+// Methods to get alternate-function pins from associated registers
+// Register address compatibility is ensured, but not pin compatibility.
+// However, for now it works.
+// Addresses are regularly distributed, so it's not so difficult.
+// Macros usually assume that at least the "first" peripherals are defined.
+
+/// Get \c OCnx port pin of \c TCxn, channel \c c (from 0 to 3)
+#define PORTPIN_OCNX(tc,ch) \
+    ((portpin_t){ &PORTC + ((tc)-&TCC0)/(&TCD0-&TCC0), \
+     4*(((tc)-&TCC0) % (&TCD0-&TCC0) != 0) + ch })
+
+/// Get \c TXDn port pin of \c USARTxn
+#define PORTPIN_TXDN(usart) \
+    ((portpin_t){ &PORTC + ((usart)-&USARTC0)/(&USARTD0-&USARTC0), \
+     4*(((usart)-&USARTC0) % (&USARTD0-&USARTC0) != 0) + 3 })
+
+
+
 #endif
 //@}
