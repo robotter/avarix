@@ -144,7 +144,8 @@ int uart_recv_nowait(uart_t *u)
 int uart_send(uart_t *u, uint8_t v)
 {
   while(uart_send_nowait(u, v) < 0) {
-    if( !(CPU_SREG & CPU_I_bm) ) { // global interrupt disabled
+    if( !(CPU_SREG & CPU_I_bm) || !(PMIC.CTRL & INTLVL_BM(UART_INTLVL)) ) {
+      // UART interrupt disabled, avoid deadlock
       while( !(u->usart->STATUS & USART_DREIF_bm) ) ;
       // pop one byte from the buffer, should be the last iteration
       uart_send_buf_byte(u);
