@@ -7,7 +7,7 @@
 #include "motor.h"
 
 
-void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, pwm_motor_sign_cb set_sign)
+void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, pwm_motor_sign_cb set_sign)
 {
   // initialize internal structure
   pwm->tc = tc;
@@ -17,7 +17,7 @@ void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, 
   pwm->vmax = PWM_MOTOR_MAX;
 
   // configure output pins
-  portpin_dirset(&pwmpp);
+  portpin_dirset(&PORTPIN_OCNX(tc,pwm->channel));
 
   // configure the timer/counter
   (&tc->CCA)[pwm->channel] = 0; // init duty cycle to the minimum

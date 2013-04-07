@@ -43,11 +43,8 @@ typedef struct {
  * @param channel  timer channel to use, letter from A to D
  * @param pwmpp  port pin of PWM output
  * @param set_sign  callback to call on sign update (optional)
- *
- * \e pwmpp depends on the XMEGA device and must match \e tc and \e channel.
- * For timer \e TCxn, channel \e y it must designates pin \e OCny on port \e x.
  */
-void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, portpin_t pwmpp, pwm_motor_sign_cb set_sign);
+void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, pwm_motor_sign_cb set_sign);
 
 /** @brief Set motor PWM output frequency, in hertz
  *
