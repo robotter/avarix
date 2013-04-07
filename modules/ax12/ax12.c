@@ -2,7 +2,7 @@
  * @cond internal
  * @file
  */
-#include <util/atomic.h>
+#include <avarix/intlvl.h>
 #include "ax12.h"
 
 
@@ -50,7 +50,7 @@ uint8_t ax12_send(ax12_t *s, const ax12_pkt_t *pkt)
   // Lock before sending last byte and before switching state to avoid
   // receiving the reply before the switch; this is required with asynchronous
   // receiving.
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     // checksum
     if(s->send(ax12_checksum(pkt))) {
       goto fail;

@@ -3,7 +3,6 @@
  * @file
  */
 #include <stdbool.h>
-#include <util/atomic.h>
 #include <avarix.h>
 #include "uart.h"
 
@@ -132,7 +131,7 @@ int uart_recv(uart_t *u)
 int uart_recv_nowait(uart_t *u)
 {
   int ret;
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     if( uart_buf_empty(&u->rxbuf) ) {
       ret = -1;
     } else {
@@ -157,7 +156,7 @@ int uart_send(uart_t *u, uint8_t v)
 int uart_send_nowait(uart_t *u, uint8_t v)
 {
   int ret;
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     if( uart_buf_full(&u->txbuf) ) {
       ret = -1;
     } else {

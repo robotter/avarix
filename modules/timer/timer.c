@@ -2,7 +2,6 @@
  * @cond internal
  * @file
  */
-#include <util/atomic.h>
 #include "timer.h"
 
 /// Scheduling configuration for a single timer channel
@@ -47,7 +46,7 @@ void timer_set_callback(timer_t *t, timer_channel_t ch, uint16_t period, intlvl_
 {
   const uint8_t ich = ch-TIMER_CHA;
   TC0_t *const tc = t->tc;
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     tc->INTCTRLB = (tc->INTCTRLB & ~(3 << 2*ich)) | (intlvl << 2*ich);
     (&tc->CCA)[ich] = tc->CNT + period;
     t->events[ich].period = period;
@@ -59,7 +58,7 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch)
 {
   const uint8_t ich = ch-TIMER_CHA;
   TC0_t *const tc = t->tc;
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     tc->INTCTRLB = (tc->INTCTRLB & ~(3 << 2*ich)) | (0 << 2*ich);
     t->events[ich].callback = 0;
   }

@@ -6,6 +6,7 @@
  * The XN_(p,s) macro must be defined before including.
  * It is automatically undefined at the end of this file.
  */
+#include <avr/interrupt.h>
 #include <clock/defs.h>
 
 #define UARTXN(s) XN_(UART,s)

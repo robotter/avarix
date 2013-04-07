@@ -4,7 +4,7 @@
  */
 
 #include <stdint.h>
-#include <util/atomic.h>
+#include <avarix/intlvl.h>
 #include "clock.h"
 
 
@@ -13,7 +13,7 @@
  */
 static void ccp_io_write(volatile uint8_t *addr, uint8_t value)
 {
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  INTLVL_DISABLE_ALL_BLOCK() {
     asm volatile (
         "out  %0, %1\n\t"
         "st   Z, %3\n\t"

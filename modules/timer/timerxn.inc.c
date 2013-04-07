@@ -6,7 +6,8 @@
  * The XN_(p,s) macro must be defined before including.
  * It is automatically undefined at the end of this file.
  */
-#include <util/atomic.h>
+#include <avr/interrupt.h>
+#include <avarix/intlvl.h>
 #include <clock/defs.h>
 
 #define TCXN(s) XN_(TC,s)
@@ -57,7 +58,7 @@ void timerXN(_init)(void)
   ISR(TCXN(_CC##x##_vect)) \
   { \
     timer_callback_t cb; \
-    ATOMIC_BLOCK(ATOMIC_FORCEON) { \
+    INTLVL_DISABLE_ALL_BLOCK() { \
       TCXN().CC##x += timerXN_event_X(x).period; \
       cb = timerXN_event_X(x).callback; \
     } \
