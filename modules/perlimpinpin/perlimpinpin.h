@@ -88,15 +88,14 @@ typedef struct {
 
 
 #ifdef DOXYGEN
-// forward declaration tricks for Doxygen
+// Doxygen trick to have the typedef name for struct documentation
 /** @cond skip */
-#define ppp_intf_struct
+#define ppp_intf_struct ppp_intf_t
 /** @endcond */
-#else
+#endif
 
 typedef struct ppp_intf_struct ppp_intf_t;
 
-#endif
 
 /** @brief Handler to process the frame payload
  *
@@ -198,14 +197,14 @@ typedef struct {
 
 /** @brief Perlimpinpin node interface
  */
-typedef struct ppp_intf_struct {
+struct ppp_intf_struct {
   uart_t *uart;  ///< UART used by the interface
   uint8_t addr;  ///< interface address
   ppp_filter_cb_t *filter;  ///< callback to filter received frames
   ppp_intf_rstate_t rstate;  ///< state of currently received frame
   ppp_intf_wstate_t wstate;  ///< state of currently sent frame
 
-} ppp_intf_t;
+};
 
 
 
