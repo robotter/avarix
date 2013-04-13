@@ -79,16 +79,24 @@ inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 // Addresses are regularly distributed, so it's not so difficult.
 // Macros usually assume that at least the "first" peripherals are defined.
 
+#ifndef DOXYGEN
+
+// get port for a MODULExn, (x between C and E)
+#define PORTPIN_MODULEXN_PORT(M,m) \
+    (PORT_t*)((char*)&PORTC + ((char*)&PORTD-(char*)&PORTC) * (((char*)(m)-(char*)&M##C0)/((char*)&M##D0-(char*)&M##C0)))
+// get n for a MODULExn (x between C and E)
+#define PORTPIN_MODULEXN_N(M,m) \
+    (((char*)(m)-(char*)&M##C0) % ((char*)&M##D0-(char*)&M##C0) != 0)
+
+#endif
+
 /// Get \c OCnx port pin of \c TCxn, channel \c c (from 0 to 3)
 #define PORTPIN_OCNX(tc,ch) \
-    ((portpin_t){ &PORTC + ((tc)-&TCC0)/(&TCD0-&TCC0), \
-     4*(((tc)-&TCC0) % (&TCD0-&TCC0) != 0) + ch })
+    ((portpin_t){ PORTPIN_MODULEXN_PORT(TC,tc),  4*PORTPIN_MODULEXN_N(TC,tc) + ch })
 
 /// Get \c TXDn port pin of \c USARTxn
 #define PORTPIN_TXDN(usart) \
-    ((portpin_t){ &PORTC + ((usart)-&USARTC0)/(&USARTD0-&USARTC0), \
-     4*(((usart)-&USARTC0) % (&USARTD0-&USARTC0) != 0) + 3 })
-
+    ((portpin_t){ PORTPIN_MODULEXN_PORT(USART,usart), 4*PORTPIN_MODULEXN_N(USART,usart) + 3 })
 
 
 #endif
