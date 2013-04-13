@@ -116,6 +116,19 @@ inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 #define PORTPIN_TXDN(usart) \
     ((portpin_t){ PORTPIN_MODULEXN_PORT(USART,usart), 4*PORTPIN_MODULEXN_N(USART,usart) + 3 })
 
+/// Get \c SS port pin of \c SPIx
+#define PORTPIN_SPI_MOSI(spi) \
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 4 })
+/// Get \c MOSI port pin of \c SPIx
+#define PORTPIN_SPI_MOSI(spi) \
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 5 })
+/// Get \c MISO port pin of \c SPIx
+#define PORTPIN_SPI_MOSI(spi) \
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 6 })
+/// Get \c SCK port pin of \c SPIx
+#define PORTPIN_SPI_MOSI(spi) \
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 7 })
+
 //@}
 
 
