@@ -15,7 +15,7 @@
 
 void aeat_spi_init(void)
 {
-  AEAT_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_0_gc |
+  AEAT_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_MODE_2_gc |
 #if AEAT_SPI_PRESCALER == 2
       SPI_PRESCALER_DIV4_gc | SPI_CLK2X_bm
 #elif AEAT_SPI_PRESCALER == 4
@@ -34,6 +34,10 @@ void aeat_spi_init(void)
 # error Invalid AEAT_SPI_PRESCALER value
 #endif
       ;
+
+  portpin_dirset(&PORTPIN_SPI_MOSI(&AEAT_SPI));
+  portpin_dirclr(&PORTPIN_SPI_MISO(&AEAT_SPI));
+  portpin_dirset(&PORTPIN_SPI_SCK(&AEAT_SPI));
 }
 
 
@@ -42,6 +46,9 @@ void aeat_init(aeat_t *enc, portpin_t cspp)
   enc->cspp = cspp;
   enc->capture = 0;
   enc->value = 0;
+
+  portpin_dirset(&cspp);
+  portpin_outset(&cspp);
 }
 
 
@@ -62,10 +69,10 @@ void aeat_update(aeat_t *enc)
   // capture a new value
   uint8_t msb = ~aeat_spi_recv();
   uint8_t lsb = ~aeat_spi_recv();
-  uint16_t capture = (msb << 8) | lsb;
+  uint16_t capture = (((uint16_t)msb << 8) | lsb) >> 3;
 
   // deselect the SPI slave
-	portpin_outclr(&enc->cspp);
+	portpin_outset(&enc->cspp);
 
   // update encoder state
   uint16_t diff = capture - enc->capture;
