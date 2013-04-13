@@ -40,9 +40,8 @@ void uartXN(_init)(void)
   uart_buf_init(&uartXN_.rxbuf);
   uart_buf_init(&uartXN_.txbuf);
 
-  // set TXD value high
+  // set TXD to output
   portpin_dirset(&PORTPIN_TXDN(uartXN_.usart));
-  portpin_outset(&PORTPIN_TXDN(uartXN_.usart));
   // enable RXC interrupts
   uartXN_.usart->CTRLA = (UART_INTLVL << USART_RXCINTLVL_gp);
   // async mode, no parity, 1 stop bit, 8 data bits
