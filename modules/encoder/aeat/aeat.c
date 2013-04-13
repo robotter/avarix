@@ -75,10 +75,14 @@ void aeat_update(aeat_t *enc)
 	portpin_outset(&enc->cspp);
 
   // update encoder state
-  uint16_t diff = capture - enc->capture;
+  uint16_t diff = (capture - enc->capture) & 0xfff;
   enc->capture = capture;
   INTLVL_DISABLE_BLOCK(INTLVL_HI) {
-    enc->value += (int16_t)diff;
+    if(diff & 0x800) {
+      enc->value -= 0x1000-diff;
+    } else {
+      enc->value += diff;
+    }
   }
 }
 
