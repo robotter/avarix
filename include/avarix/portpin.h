@@ -73,22 +73,40 @@ inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 }
 
 
-// Methods to get alternate-function pins from associated registers
-// Register address compatibility is ensured, but not pin compatibility.
-// However, for now it works.
+/** @name Access port pins from modules
+ *
+ * Get accesss to pins with alternate functions from their name.
+ *
+ * @note Register address compatibility is ensured, but not pin compatibility.
+ * For now it works.
+ */
+//@{
+
 // Addresses are regularly distributed, so it's not so difficult.
 // Macros usually assume that at least the "first" peripherals are defined.
 
-#ifndef DOXYGEN
+/** @brief Get PORTX for from MODULEx (x between C and F)
+ * @param M  module name prefix
+ * @param m  module instance pointer
+ */
+#define PORTPIN_MODULEX_PORT(M,m) \
+    (PORT_t*)((char*)&PORTC + ((char*)&PORTD-(char*)&PORTC) * (((char*)(m)-(char*)&M##C)/((char*)&M##D-(char*)&M##C)))
 
-// get port for a MODULExn, (x between C and E)
+/** @brief Get PORTX for from MODULExn (x between C and F)
+ * @param M  module name prefix
+ * @param m  module instance pointer
+ */
 #define PORTPIN_MODULEXN_PORT(M,m) \
     (PORT_t*)((char*)&PORTC + ((char*)&PORTD-(char*)&PORTC) * (((char*)(m)-(char*)&M##C0)/((char*)&M##D0-(char*)&M##C0)))
-// get n for a MODULExn (x between C and E)
+
+/** @brief Get n for MODULExn (x between C and F)
+ * @param M  module name prefix
+ * @param m  module instance pointer
+ */
 #define PORTPIN_MODULEXN_N(M,m) \
     (((char*)(m)-(char*)&M##C0) % ((char*)&M##D0-(char*)&M##C0) != 0)
 
-#endif
+
 
 /// Get \c OCnx port pin of \c TCxn, channel \c c (from 0 to 3)
 #define PORTPIN_OCNX(tc,ch) \
@@ -97,6 +115,8 @@ inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 /// Get \c TXDn port pin of \c USARTxn
 #define PORTPIN_TXDN(usart) \
     ((portpin_t){ PORTPIN_MODULEXN_PORT(USART,usart), 4*PORTPIN_MODULEXN_N(USART,usart) + 3 })
+
+//@}
 
 
 #endif
