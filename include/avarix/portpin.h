@@ -55,7 +55,7 @@ static inline void portpin_outtgl(const portpin_t *pp) { pp->port->OUTTGL = (1 <
 #define PORTPIN_CTRL(pp)  ((&(pp)->port->PIN0CTRL)[(pp)->pin])
 
 /// Event Channel multiplexer input selection for the port pin
-#define PORTPIN_EVSYS_CHMUX(pp)  (EVSYS_CHMUX_PORTA_PIN0_gc + ((pp)->port-&PORTA) * 8 + (pp)->pin)
+#define PORTPIN_EVSYS_CHMUX(pp)  (EVSYS_CHMUX_PORTA_PIN0_gc + (((char*)(pp)->port-(char*)&PORTA)/((char*)&PORTB-(char*)&PORTA)) * 8 + (pp)->pin)
 
 /** @brief Enable port pin interrupt
  *
