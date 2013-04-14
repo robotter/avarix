@@ -186,10 +186,10 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch);
 
 
 /// Convert microseconds to timer ticks
-#define TIMER_US_TO_TICKS(xn,us)  (((unsigned long)(us) * (CLOCK_PER_FREQ)) / ((TIMER##xn##_PRESCALER_DIV) * 1000000UL))
+#define TIMER_US_TO_TICKS(xn,us)  (((float)(us) * (CLOCK_PER_FREQ)) / ((TIMER##xn##_PRESCALER_DIV) * 1000000UL))
 
 /// Convert timer ticks to microseconds
-#define TIMER_TICKS_TO_US(xn,ticks)  (1000000UL * (ticks) * (TIMER##xn##_PRESCALER_DIV) / (CLOCK_PER_FREQ))
+#define TIMER_TICKS_TO_US(xn,ticks)  ((1000000UL * (float)(ticks) * (TIMER##xn##_PRESCALER_DIV)) / (CLOCK_PER_FREQ))
 
 
 #endif
