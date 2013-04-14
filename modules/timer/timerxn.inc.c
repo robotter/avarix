@@ -53,7 +53,16 @@ void timerXN(_init)(void)
 
 #define timerXN_event_X(x)  timerXN_.events[TIMER_CH##x-TIMER_CHA]
 
-/// Interrupt handler for channel callback
+/** @brief Interrupt handler for channel callback
+ *
+ * The timer counter register (CNT) is continually incremented and matched
+ * against each callback compare register (CCx).
+ * On a match, the callback is executed and CCx is incremented of the period
+ * value to schedule the next execution.
+ *
+ * Both CNT and CCx are 16-bit values and overflow as expected.
+ * As a result, period must be less than 2^16.
+ */
 #define TIMER_ISR_CCX(x) \
   ISR(TCXN(_CC##x##_vect)) \
   { \
