@@ -53,4 +53,11 @@ void pwm_motor_set(pwm_motor_t *pwm, int16_t v)
 }
 
 
+void pwm_servo_init(pwm_motor_t *pwm, TC0_t *tc, char channel)
+{
+  pwm_motor_init(pwm, tc, channel, 0);
+  pwm_motor_set_frequency(pwm, PWM_SERVO_FREQ);
+}
+
+
 //@endcond

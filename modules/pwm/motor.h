@@ -16,6 +16,9 @@
 /// Maximum value of PWM duty cycle
 #define PWM_MOTOR_MAX  32767
 
+/// Servomotor frequency
+#define PWM_SERVO_FREQ  50
+
 
 /** @brief Callback called on sign update
  * @param sign  true if positive, false if negative
@@ -81,6 +84,17 @@ void pwm_motor_set_range(pwm_motor_t *pwm, uint16_t tmin, uint16_t tmax);
  * If sign output is configured, value should be positive.
  */
 void pwm_motor_set(pwm_motor_t *pwm, int16_t v);
+
+
+/** @brief Initialize a servomotor PWM
+ *
+ * This function is equivalent to using pwm_motor_init() and \ref
+ * pwm_motor_set_frequency() to configure a motor PWM with no sign callback and
+ * a frequency of \ref PWM_SERVO_FREQ.
+ *
+ * @sa pwm_motor_init() for parameter meaning.
+ */
+void pwm_servo_init(pwm_motor_t *pwm, TC0_t *tc, char channel);
 
 
 #endif
