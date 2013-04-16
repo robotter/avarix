@@ -50,20 +50,18 @@ void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, pwm_motor_sign_cb
 
 /** @brief Set motor PWM output frequency, in hertz
  *
- * This method should be called before using the PWM.
+ * This method must be called before using the PWM.
  *
  * PWM frequency is configured per timer. PWMs configured on the same timer
  * share the same frequency. It is advised to set frequency of each PWM motor,
- * even if they use the same timer.
+ * even if they use the same timer, in order to reset the duty cycle period
+ * range.
  *
- * Timer prescaler is not used and frequency range depends only on
- * \ref CLOCK_PER_FREQ. Values can go from <em>CLOCK_PER_FREQ/65536</em> to
- * <em>CLOCK_PER_FREQ/2</em>.
- * Moreover, type range restrict frequency maximum value to 65535Hz.
+ * Timer prescaler is guessed from the provided frequency.
  *
- * @note The duty cycle period range is clamped if needed.
+ * @note The duty cycle period range is reset to the largest range.
  */
-void pwm_motor_set_frequency(pwm_motor_t *pwm, uint16_t freq);
+void pwm_motor_set_frequency(pwm_motor_t *pwm, uint32_t freq);
 
 /** @brief Set duty cycle period range, in microseconds
  *
