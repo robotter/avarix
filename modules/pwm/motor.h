@@ -41,7 +41,6 @@ typedef struct {
  * @param pwm  motor PWM to initialize
  * @param tc  timer to use (can also be a pointer to a \e TC1_t)
  * @param channel  timer channel to use, letter from A to D
- * @param pwmpp  port pin of PWM output
  * @param set_sign  callback to call on sign update (optional)
  */
 void pwm_motor_init(pwm_motor_t *pwm, TC0_t *tc, char channel, pwm_motor_sign_cb set_sign);
