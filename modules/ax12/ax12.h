@@ -139,5 +139,10 @@ uint8_t ax12_ping(ax12_t *s, uint8_t id);
 uint8_t ax12_reset(ax12_t *s, uint8_t id);
 
 
+/// Convert a payload (signed) word to a 10-bit signed value
+#define AX12_WORD_TO_SIGNED(x)  ((x & 0x400) ? -((x) & 0x3FF) : (x))
+/// Convert a 10-bit signed value to a payload (signed) word
+#define AX12_SIGNED_TO_WORD(x)  ((x) < 0 ? -(x) | 0x400 : (x))
+
 #endif
 //@}
