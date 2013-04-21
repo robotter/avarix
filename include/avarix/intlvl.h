@@ -28,7 +28,7 @@ typedef enum {
 
 
 /// Get bitmask for given interrupt level
-#define INTLVL_BM(lvl)  (1 << (lvl))
+#define INTLVL_BM(lvl)  (1 << (lvl)-1)
 /// Get bitmask for levels lower than or equal to given interrupt level
 #define INTLVL_BM_LO(lvl)  ((1 << (lvl)) - 1)
 /// Get bitmask for levels higher than or equal to given interrupt level
