@@ -211,6 +211,9 @@ uint8_t ax12_read_byte(ax12_t *s, uint8_t id, ax12_addr_t addr, uint8_t *data)
   if((ret = ax12_send(s, &pkt))) {
     return ret;
   }
+  if((ret = ax12_recv(s, &pkt))) {
+    return ret;
+  }
 
   *data = pkt.params[0];
   return 0;
@@ -227,6 +230,9 @@ uint8_t ax12_read_word(ax12_t *s, uint8_t id, ax12_addr_t addr, uint16_t *data)
 
   uint8_t ret;
   if((ret = ax12_send(s, &pkt))) {
+    return ret;
+  }
+  if((ret = ax12_recv(s, &pkt))) {
     return ret;
   }
 
@@ -248,6 +254,9 @@ uint8_t ax12_read_mem(ax12_t *s, uint8_t id, ax12_addr_t addr, uint8_t n, uint8_
 
   uint8_t ret;
   if((ret = ax12_send(s, &pkt))) {
+    return ret;
+  }
+  if((ret = ax12_recv(s, &pkt))) {
     return ret;
   }
 
