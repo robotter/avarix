@@ -5,7 +5,6 @@
 #include <avarix/intlvl.h>
 #include "ax12.h"
 
-
 /// Compute packet checksum
 uint8_t ax12_checksum(const ax12_pkt_t *pkt)
 {
@@ -122,6 +121,7 @@ uint8_t ax12_recv(ax12_t *s, ax12_pkt_t *pkt)
     pkt->params[i] = c;
   }
 
+  pkt->instruction = 0;
   // checksum
   c = s->recv();
   if(c != ax12_checksum(pkt)) {
@@ -209,8 +209,9 @@ uint8_t ax12_read_byte(ax12_t *s, uint8_t id, ax12_addr_t addr, uint8_t *data)
 
   uint8_t ret;
   if((ret = ax12_send(s, &pkt))) {
-    return ret;
+   return ret;
   }
+
   if((ret = ax12_recv(s, &pkt))) {
     return ret;
   }
