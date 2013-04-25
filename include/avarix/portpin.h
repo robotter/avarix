@@ -8,6 +8,7 @@
 
 #include <avr/io.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "intlvl.h"
 
 
@@ -32,7 +33,7 @@ typedef struct {
 #define PORTPIN_NONE  ((portpin_t){ 0, 0 })
 
 
-/** @name Update pin bit of port registers */
+/** @name Access pin bit of port registers */
 //@{
 
 /// Set port pin data direction
@@ -47,6 +48,8 @@ static inline void portpin_outset(const portpin_t *pp) { pp->port->OUTSET = (1 <
 static inline void portpin_outclr(const portpin_t *pp) { pp->port->OUTCLR = (1 << pp->pin); }
 /// Toggle port ping output
 static inline void portpin_outtgl(const portpin_t *pp) { pp->port->OUTTGL = (1 << pp->pin); }
+/// Get port pin value as a boolean
+static inline bool portpin_in(const portpin_t *pp) { return pp->port->IN & (1 << pp->pin); }
 
 //@}
 
