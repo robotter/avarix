@@ -10,6 +10,7 @@ endif
 
 $(eval $(call py_templatize_dir_rule, \
 	$(src_dir)/templates, $(GEN_FILES), \
-	$(src_dir)/templates/payload/room.py $(ROOM_TRANSACTIONS) \
+	$(src_dir)/templates/payload/room.py $(ROOM_TRANSACTIONS), \
+	$(ROOM_TRANSACTIONS) \
 	))
 
