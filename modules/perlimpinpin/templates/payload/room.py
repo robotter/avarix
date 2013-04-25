@@ -26,6 +26,8 @@ class CodeGenerator:
       u = 'u' if not typ.signed else ''
       n = typ.packsize * 8
       return '%sint%d_t' % (u, n)
+    elif issubclass(typ, room.types.room_float):
+      return 'float'
     else:
       raise TypeError("unsupported type: %s" % typ)
 
