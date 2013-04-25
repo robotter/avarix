@@ -13,10 +13,10 @@ $$(gen_dir)/$(2): $(1)
 endef
 
 # Define rule to generate templates from a directory using PY_TEMPLATIZE
-#   py_templatize_dir_rule <template-dir> <output-names> [args]
+#   py_templatize_dir_rule <template-dir> <output-names> [args] [deps]
 define py_templatize_dir_rule
-$$(addprefix $$(gen_dir)/,$(2)): $$(gen_dir)/%: $(1)/%
+$$(addprefix $$(gen_dir)/,$(2)): $$(gen_dir)/%: $(1)/% $(4)
 	@mkdir -p $$(dir $$@)
-	$(PY_TEMPLATIZE) -o $$@ -i $$^ -- $(3)
+	$(PY_TEMPLATIZE) -o $$@ -i $$< -- $(3)
 endef
 
