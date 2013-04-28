@@ -41,7 +41,7 @@ this_makefile := $(lastword $(MAKEFILE_LIST))
 modules_deps = $(obj_dir)/modules.deps
 export modules_deps
 
--include $(modules_deps)
+include $(modules_deps)
 MODULES_PATHS = $(addprefix modules/,$(ALL_MODULES))
 
 SRC_COBJS = $(SRCS:%.c=$(obj_dir)/%.$(HOST).o)
@@ -164,7 +164,7 @@ help:
 
 # Modules and their dependencies
 
-$(modules_deps):
+$(modules_deps): $(firstword $(MAKEFILE_LIST))
 ifneq ($(use_deps),)
 	@mkdir -p $(obj_dir) $(gen_dir)
 	$(MAKE) -f $(AVARIX_DIR)/mk/moduledeps.mk new_modules='$(MODULES)'
