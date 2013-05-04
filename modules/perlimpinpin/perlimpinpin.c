@@ -199,17 +199,19 @@ int8_t ppp_payload_handler_drop(ppp_intf_t *intf)
 void ppp_send_frame(ppp_intf_t *intf, const ppp_header_t *header, const void *data)
 {
   const uint8_t *data_ = data;
-  ppp_send_frame_header(intf, header);
+  PPP_SEND_INTLVL_DISABLE() {
+    ppp_send_frame_header(intf, header);
 
-  // send data, update CRC
-  // note: cannot use ppp_send_frame_data() for which size is limited to 255
-  uint16_t i;
-  for( i=0; i<header->plsize; i++ ) {
-    uart_send(intf->uart, data_[i]);
-    intf->wstate.crc = _crc_ccitt_update(intf->wstate.crc, data_[i]);
+    // send data, update CRC
+    // note: cannot use ppp_send_frame_data() for which size is limited to 255
+    uint16_t i;
+    for( i=0; i<header->plsize; i++ ) {
+      uart_send(intf->uart, data_[i]);
+      intf->wstate.crc = _crc_ccitt_update(intf->wstate.crc, data_[i]);
+    }
+
+    ppp_send_frame_crc(intf);
   }
-
-  ppp_send_frame_crc(intf);
 }
 
 

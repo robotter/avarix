@@ -74,6 +74,23 @@ int main(void)
 # error PPP_PAYLOAD_BUF_SIZE must not be greater than 255
 #endif
 
+#if PPP_SEND_INTLVL
+# define PPP_SEND_INTLVL_DISABLE()  INTLVL_DISABLE_BLOCK(PPP_SEND_INTLVL)
+#else
+# define PPP_SEND_INTLVL_DISABLE()
+#endif
+
+#else
+
+/** @brief Block interruption of \ref PPP_SEND_INTLVL level
+ *
+ * Behavior is similar to \ref INTLVL_DISABLE_BLOCK.
+ *
+ * This macro should be used to wrap every sent PPP frame.
+ * \ref ppp_send_frame() uses it already.
+ */
+# define PPP_SEND_INTLVL_DISABLE()
+
 #endif
 
 
@@ -304,6 +321,8 @@ int8_t ppp_payload_handler_drop(ppp_intf_t *intf);
  *
  * The whole frame is sent: header, header CRC, data and payload CRC.
  * \e data size must match frame's \e plsize.
+ *
+ * @note PPP_SEND_INTLVL_DISABLE() is called.
  */
 void ppp_send_frame(ppp_intf_t *intf, const ppp_header_t *header, const void *data);
 
