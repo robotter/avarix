@@ -12,6 +12,7 @@
 #include <avr/io.h>
 #include <avarix/intlvl.h>
 #include <stdint.h>
+#include "i2c_config.h"
 
 
 #ifdef DOXYGEN
@@ -40,7 +41,7 @@ typedef struct i2cs_struct i2cs_t;
 # error I2CC enabled as both master and slave
 #elif (defined I2CC_MASTER)
 # define i2cC  (&TWIC.MASTER)
-#else
+#elif (defined I2CC_SLAVE)
 extern i2cs_t *const i2cC;
 #endif
 
@@ -48,7 +49,7 @@ extern i2cs_t *const i2cC;
 # error I2CD enabled as both master and slave
 #elif (defined I2CD_MASTER)
 # define i2cD  (&TWID.MASTER)
-#else
+#elif (defined I2CD_SLAVE)
 extern i2cs_t *const i2cD;
 #endif
 
@@ -56,7 +57,7 @@ extern i2cs_t *const i2cD;
 # error I2CE enabled as both master and slave
 #elif (defined I2CE_MASTER)
 # define i2cE  (&TWIE.MASTER)
-#else
+#elif (defined I2CE_SLAVE)
 extern i2cs_t *const i2cE;
 #endif
 
@@ -64,7 +65,7 @@ extern i2cs_t *const i2cE;
 # error I2CF enabled as both master and slave
 #elif (defined I2CF_MASTER)
 # define i2cF  (&TWIF.MASTER)
-#else
+#elif (defined I2CF_SLAVE)
 extern i2cs_t *const i2cF;
 #endif
 

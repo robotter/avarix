@@ -143,6 +143,7 @@ int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n)
   for(i=0; i<n-1; i++) {
     data[i] = m->DATA;
     m->CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+    while(!((status = m->STATUS) & TWI_MASTER_RIF_bm)) ;
   }
   data[i++] = m->DATA;
   m->CTRLC = TWI_MASTER_ACKACT_bm | TWI_MASTER_CMD_STOP_gc;
