@@ -19,6 +19,12 @@
 #if (UARTXN(_BSCALE) < -7) || (UARTXN(_BSCALE) > 7)
 #error Invalid UARTxn_BSCALE value, must be between -7 and 7
 #endif
+#if UARTXN(_RX_BUF_SIZE) > 255
+# error Invalid UARTxn_RX_BUF_SIZE value, max is 255
+#endif
+#if UARTXN(_TX_BUF_SIZE) > 255
+# error Invalid UARTxn_TX_BUF_SIZE value, max is 255
+#endif
 
 
 /// FIFO buffer for received data
