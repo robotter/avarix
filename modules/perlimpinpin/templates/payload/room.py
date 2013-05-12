@@ -85,7 +85,7 @@ class CodeGenerator:
     return (
         '#define ROOM_MSG_%s(%s) do { \\\n'
         '  const ppp_header_t _header = { \\\n'
-        '    .plsize = 2+%u, \\\n'
+        '    .plsize = 1+%u, \\\n'
         '    .src = (_i)->addr, \\\n'
         '    .dst = (_d), \\\n'
         '    .pltype = PPP_TYPE_ROOM, \\\n'
