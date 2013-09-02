@@ -12,7 +12,9 @@
 #include <avr/io.h>
 #include <avarix/intlvl.h>
 #include <stdint.h>
+#include <stddef.h>
 #include "i2c_config.h"
+#include "i2cs.h"
 
 
 #ifdef DOXYGEN
@@ -22,13 +24,9 @@ typedef struct i2cm_struct i2cm_t;
 /// I2C slave state
 typedef struct i2cs_struct i2cs_t;
 
-/// State of i2cx
-extern i2cT_t *const i2cx;
-
 #else
 
 typedef struct TWI_MASTER_struct i2cm_t;
-typedef struct i2cs_struct i2cs_t;
 
 // Check for I2C enabled as both master and slave
 // Define pointers to internal structures
@@ -42,7 +40,8 @@ typedef struct i2cs_struct i2cs_t;
 #elif (defined I2CC_MASTER)
 # define i2cC  (&TWIC.MASTER)
 #elif (defined I2CC_SLAVE)
-extern i2cs_t *const i2cC;
+# define X_(p,s)  p ## C ## s
+#include "slavex.inc.h"
 #endif
 
 #if (defined I2CD_MASTER) && (defined I2CD_SLAVE)
@@ -50,7 +49,8 @@ extern i2cs_t *const i2cC;
 #elif (defined I2CD_MASTER)
 # define i2cD  (&TWID.MASTER)
 #elif (defined I2CD_SLAVE)
-extern i2cs_t *const i2cD;
+# define X_(p,s)  p ## D ## s
+#include "slavex.inc.h"
 #endif
 
 #if (defined I2CE_MASTER) && (defined I2CE_SLAVE)
@@ -58,7 +58,8 @@ extern i2cs_t *const i2cD;
 #elif (defined I2CE_MASTER)
 # define i2cE  (&TWIE.MASTER)
 #elif (defined I2CE_SLAVE)
-extern i2cs_t *const i2cE;
+# define X_(p,s)  p ## E ## s
+#include "slavex.inc.h"
 #endif
 
 #if (defined I2CF_MASTER) && (defined I2CF_SLAVE)
@@ -66,7 +67,8 @@ extern i2cs_t *const i2cE;
 #elif (defined I2CF_MASTER)
 # define i2cF  (&TWIF.MASTER)
 #elif (defined I2CF_SLAVE)
-extern i2cs_t *const i2cF;
+# define X_(p,s)  p ## F ## s
+#include "slavex.inc.h"
 #endif
 
 #endif
