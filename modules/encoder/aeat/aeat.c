@@ -64,7 +64,7 @@ static inline uint8_t aeat_spi_recv(void)
 void aeat_update(aeat_t *enc)
 {
   // select the SPI slave
-	portpin_outclr(&enc->cspp);
+  portpin_outclr(&enc->cspp);
 
   // capture a new value
   uint8_t msb = ~aeat_spi_recv();
@@ -72,7 +72,7 @@ void aeat_update(aeat_t *enc)
   uint16_t capture = (((uint16_t)msb << 8) | lsb) >> 3;
 
   // deselect the SPI slave
-	portpin_outset(&enc->cspp);
+  portpin_outset(&enc->cspp);
 
   // update encoder state
   uint16_t diff = (capture - enc->capture) & 0xfff;
