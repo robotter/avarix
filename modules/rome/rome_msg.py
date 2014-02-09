@@ -82,6 +82,20 @@ class CodeGenerator:
       ret += self.msg_macro_helper(msg)
     return ret
 
+  @classmethod
+  def msg_macro_disabler(cls, msg):
+    return (
+        '#ifdef ROME_DISABLE_%s\n'
+        '# define %s 0\n'
+        '#endif\n'
+        ) % (msg.name.upper(), cls.mid_enum_name(msg))
+
+  def macro_disablers(self):
+    ret = ''
+    for msg in self.messages:
+      ret += self.msg_macro_disabler(msg)
+    return ret
+
 
 if __name__ == 'avarix_templatizer':
   import imp

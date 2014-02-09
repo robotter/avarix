@@ -19,6 +19,9 @@
  */
 #define ROME_SEND_INTLVL  INTLVL_LO
 
+/// If defined, disable sending of messages X
+#define ROME_DISABLE_X
+
 
 //@}
 //@}

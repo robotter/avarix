@@ -98,6 +98,9 @@ void rome_handle_input(rome_intf_t *intf)
 
 void rome_send(rome_intf_t *intf, const rome_frame_t *frame)
 {
+  if(frame->mid == 0) {
+    return;
+  }
   ROME_SEND_INTLVL_DISABLE() {
     uint16_t crc = 0xffff;
     uart_send(intf->uart, ROME_START_BYTE);

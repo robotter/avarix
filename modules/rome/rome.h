@@ -17,8 +17,8 @@
 
 #include <stdint.h>
 #include <uart/uart.h>
-#include "rome/rome_msg.h"
 #include "rome_config.h"
+#include "rome/rome_msg.h"
 
 
 #ifdef DOXYGEN

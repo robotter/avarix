@@ -70,8 +70,10 @@ typedef struct {
 #else
 
 #pragma avarix_tpl self.macro_helpers()
-#endif
 
+#pragma avarix_tpl self.macro_disablers()
+
+#endif
 
 #endif
 //@}
