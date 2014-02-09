@@ -4,6 +4,7 @@
  */
 #include <stdint.h>
 #include <math.h>
+#include <avr/cpufunc.h>
 #include <util/atomic.h>
 #include <util/parity.h>
 #include <clock/defs.h>
@@ -283,7 +284,7 @@ void adxrs_capture_start(float scale)
   ADXRS_SPI.INTCTRL = ADXRS_CAPTURE_INTLVL;
   // /CS must be high for 100ns, or 3.2 cycles at 32MHz (max frequency)
   // add some nops juste to be sure
-  nop(); nop(); nop();
+  _NOP(); _NOP(); _NOP();
   portpin_outclr(&gyro.cspp);
   ADXRS_SPI.DATA = 0x20;
 }
