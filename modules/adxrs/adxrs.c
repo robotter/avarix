@@ -7,8 +7,8 @@
 #include <avr/cpufunc.h>
 #include <util/atomic.h>
 #include <util/parity.h>
-#include <clock/defs.h>
 #include <util/delay.h>
+#include <clock/defs.h>
 #include "adxrs.h"
 #include "adxrs_config.h"
 
@@ -144,10 +144,8 @@ static void adxrs_parse_response(uint8_t data[4])
 
   // parse response fields
   uint8_t status = (data[0] >> 2) & 0x3;
-  
   if(status == 3) {
     uint8_t type = (data[0] >> 5) & 0x7;
-
     if(type == 0) {
       // R/W error
       gyro.response.type = ADXRS_RESPONSE_RW_ERROR;
@@ -165,7 +163,7 @@ static void adxrs_parse_response(uint8_t data[4])
         gyro.response.type = ADXRS_RESPONSE_INVALID;
       }
       gyro.response.read.data = ((uint16_t)(data[1] & 0x1f) << 11) |
-        ((uint16_t)data[2] << 3) | (data[3] >> 5);
+          ((uint16_t)data[2] << 3) | (data[3] >> 5);
     }
   } else {
     // sensor data
@@ -173,7 +171,7 @@ static void adxrs_parse_response(uint8_t data[4])
     gyro.response.sensor_data.sequence = (data[0] >> 5) & 0x7;
     gyro.response.sensor_data.status = status;
     gyro.response.sensor_data.data = ((uint16_t)(data[0] & 0x03) << 14) |
-      ((uint16_t)data[1] << 6) | (data[2] >> 2);
+        ((uint16_t)data[1] << 6) | (data[2] >> 2);
     gyro.response.sensor_data.fault_raw = data[3] & 0xfe;
   }
 }
@@ -206,7 +204,6 @@ void adxrs_cmd_sensor_data(uint8_t seq, bool chk)
   uint8_t p = (seq >> 1) ^ (seq >> 1) ^ seq ^ chk;
   uint8_t data[4] = { ((seq & 3) << 6) | 0x20 | ((seq & 7) << 2),
     0, 0, p | (chk << 1) };
-  
   adxrs_cmd_raw(data);
 }
 
@@ -328,10 +325,9 @@ ISR(ADXRS_SPI_INT_vect)
 
     if(adxrs_check_response_parity(data) && (data[0] & 0x0C) == 0x04) {
       // valid response, parse speed
-      
       gyro.capture_speed = ((uint16_t)(data[0] & 0x03) << 14) |
-          ((uint16_t)data[1] << 6) | (uint16_t)(data[2] >> 2);
-  }
+          ((uint16_t)data[1] << 6) | (data[2] >> 2);
+    }
 
     // update angle (internal) value
     // on error, previous (valid) speed value is used
