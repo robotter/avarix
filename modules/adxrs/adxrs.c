@@ -312,6 +312,45 @@ void adxrs_set_angle(float angle)
 }
 
 
+/// Update captured angle value
+static void adxrs_update_angle(uint8_t data)
+{
+  if(adxrs_check_response_parity(data) && (data[0] & 0x0C) == 0x04) {
+    // valid response, parse speed
+    gyro.capture_speed = ((uint16_t)(data[0] & 0x03) << 14) |
+        ((uint16_t)data[1] << 6) | (data[2] >> 2);
+  }
+
+  // update angle (internal) value
+  // on error, previous (valid) speed value is used
+  float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
+  while(angle <= -(float)M_PI) angle += 2*(float)M_PI;
+  while(angle > (float)M_PI) angle -= 2*(float)M_PI;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    gyro.angle = angle;
+  }
+}
+
+
+void adxrs_capture_next(float scale)
+{
+  // send next capture command
+  uint8_t rdata[4];
+  portpin_outclr(&gyro.cspp);
+  rdata[0] = adxrs_spi_transmit(0x20);
+  rdata[1] = adxrs_spi_transmit(0x00);
+  rdata[2] = adxrs_spi_transmit(0x00);
+  rdata[3] = adxrs_spi_transmit(0x00);
+  portpin_outset(&gyro.cspp);
+
+  if(scale != 0) {
+    // check response, update angle
+    gyro.capture_scale = scale;
+    adxrs_update_angle(rdata);
+  }
+}
+
+
 /// Interrupt handler for capture mode
 ISR(ADXRS_SPI_INT_vect)
 {
@@ -323,20 +362,8 @@ ISR(ADXRS_SPI_INT_vect)
   if(++gyro.capture_index == 4) {
     portpin_outset(&gyro.cspp);
 
-    if(adxrs_check_response_parity(data) && (data[0] & 0x0C) == 0x04) {
-      // valid response, parse speed
-      gyro.capture_speed = ((uint16_t)(data[0] & 0x03) << 14) |
-          ((uint16_t)data[1] << 6) | (data[2] >> 2);
-    }
-
-    // update angle (internal) value
-    // on error, previous (valid) speed value is used
-    float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
-    while(angle <= -(float)M_PI) angle += 2*(float)M_PI;
-    while(angle > (float)M_PI) angle -= 2*(float)M_PI;
-    INTLVL_DISABLE_ALL_BLOCK() {
-      gyro.angle = angle;
-    }
+    // check response, update angle
+    adxrs_update_angle(data);
 
     // first byte of a new command
     portpin_outclr(&gyro.cspp);

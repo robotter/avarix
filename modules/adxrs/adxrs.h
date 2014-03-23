@@ -13,6 +13,8 @@
  * In capture mode, sensor data commands are sent repeatedly using SPI
  * interrupt. Angle speed is retrieved and integrated; the angle position
  * value can be retrieved with \ref adxrs_get_angle().
+ * A manual capture mode is available; capture are not interrupt-based but
+ * triggered manually.
  *
  * SM bits (sensor module) are not handled.
  * They are hard-coded to 000 on ADXRS453.
@@ -173,6 +175,9 @@ bool adxrs_startup(void);
  * Current angle value can be retrieved at any moment.
  * Capture period is determined by SPI period.
  *
+ * An alternate mode not using interruptions is available. Values are retrieved
+ * manually using \ref adxrs_capture_next().
+ *
  * Angle values are in radians, between -Pi and Pi.
  */
 //@{
@@ -190,6 +195,16 @@ void adxrs_capture_start(float scale);
 
 /// Stop capture mode
 void adxrs_capture_stop(void);
+
+/** @brief Manually capture the next angle value
+ *
+ * \a scale is the value for the current capture and should be based on the
+ * time since the previous capture.
+ *
+ * If scale is 0, captured valued is not used. It should be used to initialize
+ * the capture.
+ */
+void adxrs_capture_manual(float scale);
 
 /// Get current angle value
 float adxrs_get_angle(void);
