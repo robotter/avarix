@@ -332,7 +332,7 @@ static void adxrs_update_angle(uint8_t data[4])
 }
 
 
-void adxrs_capture_next(float scale)
+void adxrs_capture_manual(float scale)
 {
   // send next capture command
   uint8_t rdata[4];
@@ -347,6 +347,9 @@ void adxrs_capture_next(float scale)
     // check response, update angle
     gyro.capture_scale = scale;
     adxrs_update_angle(rdata);
+  } else {
+    // reset current speed
+    gyro.capture_speed = 0;
   }
 }
 
