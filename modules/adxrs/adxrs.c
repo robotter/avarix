@@ -7,8 +7,8 @@
 #include <avr/cpufunc.h>
 #include <util/atomic.h>
 #include <util/parity.h>
-#include <util/delay.h>
 #include <clock/defs.h>
+#include <util/delay.h>
 #include "adxrs.h"
 #include "adxrs_config.h"
 
@@ -313,7 +313,7 @@ void adxrs_set_angle(float angle)
 
 
 /// Update captured angle value
-static void adxrs_update_angle(uint8_t data)
+static void adxrs_update_angle(uint8_t data[4])
 {
   if(adxrs_check_response_parity(data) && (data[0] & 0x0C) == 0x04) {
     // valid response, parse speed
