@@ -74,8 +74,8 @@ typedef struct {
   float capture_scale;  ///< scaling coefficient for captured values
   uint8_t capture_index;  ///< index of next captured byte
   int16_t capture_speed;  ///< last (valid) captured angle speed
-  bool calibration; ///< calibration mode
-  int16_t calibration_offset; ///< calibration offset
+  bool calibration;  ///< calibration mode
+  int16_t calibration_offset;  ///< calibration offset
 } adxrs_t;
 
 
@@ -298,7 +298,8 @@ void adxrs_capture_stop(void)
   portpin_outset(&gyro.cspp);
 }
 
-void adxrs_calibration_mode(bool activate) {
+void adxrs_calibration_mode(bool activate)
+{
   gyro.calibration = activate;
 }
 
