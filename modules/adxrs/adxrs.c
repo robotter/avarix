@@ -74,6 +74,8 @@ typedef struct {
   float capture_scale;  ///< scaling coefficient for captured values
   uint8_t capture_index;  ///< index of next captured byte
   int16_t capture_speed;  ///< last (valid) captured angle speed
+  bool calibration; ///< calibration mode
+  int16_t calibration_offset; ///< calibration offset
 } adxrs_t;
 
 
@@ -86,6 +88,8 @@ void adxrs_init(portpin_t cspp)
   gyro.cspp = cspp;
   gyro.response.type = ADXRS_RESPONSE_NONE;
   gyro.angle = 0;
+  gyro.calibration = false;
+  gyro.calibration_offset = 0;
 
   // initialize SPI
   portpin_dirset(&PORTPIN_SPI_SS(&ADXRS_SPI));
@@ -294,6 +298,9 @@ void adxrs_capture_stop(void)
   portpin_outset(&gyro.cspp);
 }
 
+void adxrs_calibration_mode(bool activate) {
+  gyro.calibration = activate;
+}
 
 float adxrs_get_angle(void)
 {
@@ -321,13 +328,19 @@ static void adxrs_update_angle(uint8_t data[4])
         ((uint16_t)data[1] << 6) | (data[2] >> 2);
   }
 
-  // update angle (internal) value
-  // on error, previous (valid) speed value is used
-  float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
-  while(angle <= -(float)M_PI) angle += 2*(float)M_PI;
-  while(angle > (float)M_PI) angle -= 2*(float)M_PI;
-  INTLVL_DISABLE_ALL_BLOCK() {
-    gyro.angle = angle;
+  if(gyro.calibration) {
+    gyro.calibration_offset = gyro.capture_speed;
+
+  } else {
+    // update angle (internal) value
+    // on error, previous (valid) speed value is used
+    gyro.capture_speed = gyro.capture_speed - gyro.calibration_offset;
+    float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
+    while(angle <= -(float)M_PI) angle += 2*(float)M_PI;
+    while(angle > (float)M_PI) angle -= 2*(float)M_PI;
+    INTLVL_DISABLE_ALL_BLOCK() {
+      gyro.angle = angle;
+    }
   }
 }
 

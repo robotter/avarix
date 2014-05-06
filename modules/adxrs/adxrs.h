@@ -206,6 +206,11 @@ void adxrs_capture_stop(void);
  */
 void adxrs_capture_manual(float scale);
 
+/** @brief activate ADXRS calibration mode
+ * @param activate if TRUE activate calibration mode
+ */
+void adxrs_calibration_mode(bool activate);
+
 /// Get current angle value
 float adxrs_get_angle(void);
 
