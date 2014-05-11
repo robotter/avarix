@@ -337,8 +337,6 @@ static void adxrs_update_angle(uint8_t data[4])
     // on error, previous (valid) speed value is used
     gyro.capture_speed = gyro.capture_speed - gyro.calibration_offset;
     float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
-    while(angle <= -(float)M_PI) angle += 2*(float)M_PI;
-    while(angle > (float)M_PI) angle -= 2*(float)M_PI;
     INTLVL_DISABLE_ALL_BLOCK() {
       gyro.angle = angle;
     }
