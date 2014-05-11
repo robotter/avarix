@@ -24,7 +24,7 @@ typedef enum {
 /// ROME frame
 typedef struct {
   uint8_t plsize;  ///< length of payload data
-  rome_mid_t mid; ///< message ID
+  uint8_t mid; ///< message ID
   union {
     uint8_t _data[3];
     /// Data of dummy message
@@ -43,7 +43,7 @@ typedef enum {
 
 typedef struct {
   uint8_t plsize;
-  rome_mid_t mid;
+  uint8_t mid;
   union {
     uint8_t _data[$$avarix:self.max_param_size()$$];
 #pragma avarix_tpl self.msgdata_union_fields()
