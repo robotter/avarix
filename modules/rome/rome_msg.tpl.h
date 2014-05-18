@@ -39,7 +39,7 @@ typedef struct {
 
 typedef enum {
 #pragma avarix_tpl self.mid_enum_fields()
-} rome_mid_t;
+} __attribute__((__packed__)) rome_mid_t;
 
 typedef struct {
   uint8_t plsize;
