@@ -1,5 +1,5 @@
 // Generation date: $$avarix:time.strftime('%Y-%m-%d %H:%m:%S')$$
-/** @addtogroup ROME */
+/** @addtogroup rome */
 //@{
 /** @file
  * @brief Definition of ROME frame and messages

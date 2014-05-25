@@ -1,4 +1,4 @@
-/** @defgroup rome Rome
+/** @defgroup rome ROME
  * @brief ROME module
  *
  * ROME is a communication protocole. This module handles Rome communications
@@ -11,6 +11,11 @@
  * 
  * The frame handler is set on the interface and called when a valid frame
  * has been received.
+ */
+//@{
+/**
+ * @file
+ * @brief ROME module definitions
  */
 #ifndef ROME_H__
 #define ROME_H__
@@ -73,3 +78,4 @@ void rome_send(rome_intf_t *intf, const rome_frame_t *frame);
 
 
 #endif
+//@}
