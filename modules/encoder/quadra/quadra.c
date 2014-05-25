@@ -57,4 +57,4 @@ void quadra_set_value(quadra_t *enc, int32_t v)
 }
 
 
-//@endcond
+///@endcond

@@ -273,4 +273,4 @@ void ppp_send_system_reset(ppp_intf_t *intf)
 }
 
 
-//@endcond
+///@endcond

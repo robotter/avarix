@@ -309,4 +309,4 @@ uint8_t ax12_reset(ax12_t *s, uint8_t id)
 }
 
 
-//@endcond
+///@endcond

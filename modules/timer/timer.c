@@ -112,4 +112,4 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch)
 #endif
 
 
-//@endcond
+///@endcond

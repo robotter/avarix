@@ -99,4 +99,4 @@ void pwm_servo_init(pwm_motor_t *pwm, TC0_t *tc, char channel)
 }
 
 
-//@endcond
+///@endcond

@@ -105,4 +105,4 @@ void aeat_set_value(aeat_t *enc, int32_t v)
 }
 
 
-//@endcond
+///@endcond

@@ -407,4 +407,4 @@ ISR(ADXRS_SPI_INT_vect)
 }
 
 
-//@endcond
+///@endcond

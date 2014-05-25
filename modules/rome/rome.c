@@ -119,3 +119,4 @@ void rome_send(rome_intf_t *intf, const rome_frame_t *frame)
 }
 
 
+///@endcond

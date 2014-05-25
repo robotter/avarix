@@ -46,4 +46,4 @@ void ppp_send_logf(ppp_intf_t *intf, uint8_t dst, uint8_t sev, const char *fmt, 
   ppp_send_frame(intf, &header, buf);
 }
 
-//@endcond
+///@endcond

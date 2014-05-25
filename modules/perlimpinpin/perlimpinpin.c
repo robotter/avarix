@@ -251,4 +251,4 @@ void ppp_send_frame_crc(ppp_intf_t *intf)
 
 
 
-//@endcond
+///@endcond
