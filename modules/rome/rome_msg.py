@@ -60,13 +60,13 @@ class CodeGenerator:
         '  (_f)->plsize = %(plsize)s; \\\n'
         '  (_f)->mid = %(MID)s; \\\n'
         '%(set_params)s'
-        '} while(0);\n\n'
+        '} while(0)\n\n'
         '\n'
         '#define ROME_SEND_%(NAME)s(_i%(pnames)s) do { \\\n'
         '  rome_frame_t _frame; \\\n'
         '  ROME_SET_%(NAME)s(&_frame%(paren_pnames)s); \\\n'
         '  rome_send((_i), &_frame); \\\n'
-        '} while(0);\n\n'
+        '} while(0)\n\n'
         ) % {
             'NAME': msg.name.upper(),
             'pnames': ''.join(', '+s for s in pnames),
