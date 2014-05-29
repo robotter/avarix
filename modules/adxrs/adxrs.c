@@ -319,6 +319,13 @@ void adxrs_set_angle(float angle)
   }
 }
 
+float adxrs_get_speed(void) {
+  float speed;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    speed = gyro.capture_speed;
+  }
+  return speed;
+}
 
 /// Update captured angle value
 static void adxrs_update_angle(uint8_t data[4])
@@ -328,11 +335,20 @@ static void adxrs_update_angle(uint8_t data[4])
     gyro.capture_speed = ((uint16_t)(data[0] & 0x03) << 14) |
         ((uint16_t)data[1] << 6) | (data[2] >> 2);
   }
+  else
+    return;
+
+  // check calibration signal rising edge
+  static bool lcalibration = false;
+  if(gyro.calibration && !lcalibration) {
+    gyro.calibration_offset = gyro.capture_speed;
+  }
+  lcalibration = gyro.calibration;
 
   if(gyro.calibration) {
-    gyro.calibration_offset = gyro.capture_speed;
-
-  } else {
+    gyro.calibration_offset = 0.95*gyro.calibration_offset + 0.05*gyro.capture_speed;
+  }
+  else {
     // update angle (internal) value
     // on error, previous (valid) speed value is used
     gyro.capture_speed = gyro.capture_speed - gyro.calibration_offset;

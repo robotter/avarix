@@ -217,6 +217,9 @@ float adxrs_get_angle(void);
 /// Set current angle value
 void adxrs_set_angle(float angle);
 
+/// Get current measured angular speed
+float adxrs_get_speed(void);
+
 //@}
 
 
