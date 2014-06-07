@@ -6,7 +6,7 @@ FORMAT ?= ihex
 FORMAT_EXTENSION ?= hex
 MATH_LIB ?= yes
 PRINTF_LEVEL ?= standard
-STD ?= gnu99
+STD ?= gnu11
 
 project_dir ?= .
 src_dir ?= $(project_dir)
