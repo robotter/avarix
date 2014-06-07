@@ -151,6 +151,7 @@ help:
 	@echo "  clean-project       clean project objects and outputs"
 	@echo "  clean-modules       clean all module objects"
 	@echo "  clean-MODULE        clean objects for module MODULE"
+	@echo "  build/**/*.E        preprocessor output for associated object file"
 	@echo ""
 	@echo "MODULE is a module path, prefixed by 'modules/'."
 	@echo "For instance:  modules/comm/uart"
@@ -181,6 +182,17 @@ defaultconf-$(1):
 	$(MAKE) -f $(AVARIX_DIR)/mk/module.mk \
 		src_dir=$(AVARIX_DIR)/$(1) obj_dir=$(obj_dir)/$(1) gen_dir=$(gen_dir)/$(1) \
 		defaultconf $(src_dir)
+
+$(obj_dir)/$(1)/%: .force
+	$(MAKE) -f $(AVARIX_DIR)/mk/module.mk \
+		src_dir=$(AVARIX_DIR)/$(1) obj_dir=$(obj_dir)/$(1) gen_dir=$(gen_dir)/$(1) \
+		$$@
+
+$(gen_dir)/$(1)/%: .force
+	$(MAKE) -f $(AVARIX_DIR)/mk/module.mk \
+		src_dir=$(AVARIX_DIR)/$(1) obj_dir=$(obj_dir)/$(1) gen_dir=$(gen_dir)/$(1) \
+		$$@
+
 endef
 $(foreach m,$(MODULES_PATHS),$(eval $(call module_lib_tpl,$m)))
 
@@ -239,6 +251,20 @@ $(AOBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.S
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
 
+# Preprocessor output
+
+$(SRC_COBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(src_dir)/%.c .force
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) -E $< -o $@
+
+$(GEN_COBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(gen_dir)/%.c .force
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) -E $< -o $@
+
+$(AOBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(src_dir)/%.S .force
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) -E $< -o $@
+
 # Other (final) outputs (.hex, .eep) from ELF
 
 %.$(FORMAT_EXTENSION): %.elf
@@ -251,7 +277,6 @@ $(AOBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.S
 		-O $(FORMAT) $< $@
 
 
-
 # Cleaning
 
 clean: clean-project clean-modules
@@ -259,7 +284,7 @@ clean: clean-project clean-modules
 
 clean-project:
 	rm -f $(TARGET_OBJ) $(PROJECT_LIB) $(OUTPUTS) \
-		$(GEN_FILES_FULL) $(OBJS) $(DEPS) $(modules_deps)
+		$(GEN_FILES_FULL) $(OBJS) $(OBJS:.o=.E) $(DEPS) $(modules_deps)
 
 clean_modules_rules = $(addprefix clean-,$(MODULES_PATHS))
 
@@ -272,5 +297,5 @@ $(clean_modules_rules): clean-%:
 
 
 .PHONY : $(clean_rules) $(clean_modules_rules) \
-	size help list-modules
+	size help list-modules .force
 

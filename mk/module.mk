@@ -53,6 +53,20 @@ $(AOBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.S
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
 
+# Preprocessor output
+
+$(SRC_COBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(src_dir)/%.c .force
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) -E $< -o $@
+
+$(GEN_COBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(gen_dir)/%.c .force
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) -E $< -o $@
+
+$(AOBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(src_dir)/%.S .force
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) -E $< -o $@
+
 
 # Default configuration
 
@@ -64,9 +78,9 @@ $(defaultconf_rules): defaultconf-%: $(src_dir)/%
 	-[ -f $(project_dir)/$(notdir $<) ] || cp $< $(project_dir)/
 
 clean:
-	rm -f $(TARGET_OBJ) $(GEN_FILES_FULL) $(OBJS) $(DEPS)
+	rm -f $(TARGET_OBJ) $(GEN_FILES_FULL) $(OBJS) $(OBJS:.o=.E) $(DEPS)
 	@-rmdir -p $(sort $(obj_dir) $(gen_dir) $(dir $(OBJS) $(GEN_FILES_FULL))) 2>/dev/null
 
 
-.PHONY : clean
+.PHONY : clean .force
 
