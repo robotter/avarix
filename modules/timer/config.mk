@@ -1,2 +1,2 @@
-SRCS = timer.c
+SRCS = timer.c uptime.c
 MODULES = clock
