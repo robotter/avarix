@@ -200,5 +200,16 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch);
 #define TIMER_TICKS_TO_US(xn,ticks)  ((1000000UL * (float)(ticks) * (TIMER##xn##_PRESCALER_DIV)) / (CLOCK_PER_FREQ))
 
 
+/** @brief Check if a microseconds to ticks lose precision
+ *
+ * This macro be used to check at compile time for rounding errors when
+ * converting microseconds to timer ticks. A static assert is triggered in case
+ * of rounding error.
+ */
+#define TIMER_CHECK_US_TO_TICKS_PRECISION(xn,us) \
+    _Static_assert((float)(uint32_t)TIMER_US_TO_TICKS(xn,us) == TIMER_US_TO_TICKS(xn,us), \
+                   "timer precision lost when converting microseconds to ticks")
+
+
 #endif
 //@}
