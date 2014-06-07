@@ -21,6 +21,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <avarix/intlvl.h>
+#include <avarix/internal.h>
 #include <clock/defs.h>
 #include "timer_config.h"
 
@@ -190,14 +191,14 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch);
  * is provided in the XN form and period is provided in microseconds
  */
 #define TIMER_SET_CALLBACK_US(xn,ch,us,intlvl,cb) \
-    timer_set_callback(timer ## xn, (ch), TIMER_US_TO_TICKS(xn,(us)), (intlvl), (cb))
+    timer_set_callback(AVARIX_EVALCONCAT2(timer,xn), (ch), TIMER_US_TO_TICKS(xn,(us)), (intlvl), (cb))
 
 
 /// Convert microseconds to timer ticks
-#define TIMER_US_TO_TICKS(xn,us)  (((float)(us) * (CLOCK_PER_FREQ)) / ((TIMER##xn##_PRESCALER_DIV) * 1000000UL))
+#define TIMER_US_TO_TICKS(xn,us)  (((float)(us) * (CLOCK_PER_FREQ)) / ((AVARIX_EVALCONCAT3(TIMER,xn,_PRESCALER_DIV)) * 1000000UL))
 
 /// Convert timer ticks to microseconds
-#define TIMER_TICKS_TO_US(xn,ticks)  ((1000000UL * (float)(ticks) * (TIMER##xn##_PRESCALER_DIV)) / (CLOCK_PER_FREQ))
+#define TIMER_TICKS_TO_US(xn,ticks)  ((1000000UL * (float)(ticks) * (AVARIX_EVALCONCAT3(TIMER,xn,_PRESCALER_DIV))) / (CLOCK_PER_FREQ))
 
 
 /** @brief Check if a microseconds to ticks lose precision
