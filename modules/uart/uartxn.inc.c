@@ -60,7 +60,7 @@ void uartXN(_init)(void)
        : (uint16_t)( (1L<<-UARTXN(_BSCALE)) * (((float)(CLOCK_CPU_FREQ) / (16 * (unsigned long)UARTXN(_BAUDRATE))) - 1) ) \
       )
   // baudrate, updated when BAUDCTRLA is written so set it after BAUDCTRLB
-  uartXN_.usart->BAUDCTRLB = ((UART_BSEL >> 8) & 0x0F) | (UARTXN(_BSCALE) << USART_BSCALE_gp);
+  uartXN_.usart->BAUDCTRLB = ((UART_BSEL >> 8) & 0x0F) | ((UARTXN(_BSCALE) << USART_BSCALE_gp) & USART_BSCALE_gm);
   uartXN_.usart->BAUDCTRLA = (UART_BSEL & 0xFF);
 #undef UART_BSEL
   // enable RX, enable TX
