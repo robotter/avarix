@@ -28,6 +28,24 @@
 # error Invalid UARTxn_TX_BUF_SIZE value, max is 255
 #endif
 
+#define UARTXN_BSEL \
+    ((UARTXN(_BSCALE) >= 0) \
+     ? (uint16_t)( 0.5 + (float)(CLOCK_CPU_FREQ) / ((1L<<UARTXN(_BSCALE)) * 16 * (unsigned long)UARTXN(_BAUDRATE)) - 1 ) \
+     : (uint16_t)( 0.5 + (1L<<-UARTXN(_BSCALE)) * (((float)(CLOCK_CPU_FREQ) / (16 * (unsigned long)UARTXN(_BAUDRATE))) - 1) ) \
+    )
+
+// check difference between configured and actual bitrate
+// error rate less than 1% should be possible for all usual baudrates
+#define UART_ACTUAL_BAUDRATE \
+    ((UARTXN(_BSCALE) >= 0) \
+     ? ( (float)(CLOCK_CPU_FREQ) / ((1L<<UARTXN(_BSCALE)) * 16 * (UARTXN_BSEL + 1)) ) \
+     : ( (1L<<-UARTXN(_BSCALE)) * (float)(CLOCK_CPU_FREQ) / (16 * (UARTXN_BSEL + (1L<<-UARTXN(_BSCALE)))) ) \
+    )
+_Static_assert(UART_ACTUAL_BAUDRATE/UARTXN(_BAUDRATE) < 1.01 &&
+               UART_ACTUAL_BAUDRATE/UARTXN(_BAUDRATE) > 0.99,
+               "Baudrate error is higher than 1%, try with another UARTxn_BSCALE value");
+#undef UART_ACTUAL_BAUDRATE
+
 
 /// FIFO buffer for received data
 static uint8_t uartXN(_rxbuf)[UARTXN(_RX_BUF_SIZE)];
@@ -56,15 +74,9 @@ void uartXN(_init)(void)
   uartXN_.usart->CTRLC = USART_CMODE_ASYNCHRONOUS_gc
       | USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc;
 
-#define UART_BSEL \
-      ((UARTXN(_BSCALE) >= 0) \
-       ? (uint16_t)( (float)(CLOCK_CPU_FREQ) / ((1L<<UARTXN(_BSCALE)) * 16 * (unsigned long)UARTXN(_BAUDRATE)) - 1 ) \
-       : (uint16_t)( (1L<<-UARTXN(_BSCALE)) * (((float)(CLOCK_CPU_FREQ) / (16 * (unsigned long)UARTXN(_BAUDRATE))) - 1) ) \
-      )
   // baudrate, updated when BAUDCTRLA is written so set it after BAUDCTRLB
-  uartXN_.usart->BAUDCTRLB = ((UART_BSEL >> 8) & 0x0F) | ((UARTXN(_BSCALE) << USART_BSCALE_gp) & USART_BSCALE_gm);
-  uartXN_.usart->BAUDCTRLA = (UART_BSEL & 0xFF);
-#undef UART_BSEL
+  uartXN_.usart->BAUDCTRLB = ((UARTXN_BSEL >> 8) & 0x0F) | ((UARTXN(_BSCALE) << USART_BSCALE_gp) & USART_BSCALE_gm);
+  uartXN_.usart->BAUDCTRLA = (UARTXN_BSEL & 0xFF);
   // enable RX, enable TX
   uartXN_.usart->CTRLB = USART_RXEN_bm | USART_TXEN_bm;
 }
@@ -91,3 +103,4 @@ ISR(USARTXN(_DRE_vect))
 #undef USARTXN
 #undef uartXN_
 #undef XN_
+#undef UARTXN_BSEL
