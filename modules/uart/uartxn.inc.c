@@ -16,8 +16,10 @@
 #define uartXN_ XN_(uart,_)
 
 // Configuration checks
-#if (UARTXN(_BSCALE) < -7) || (UARTXN(_BSCALE) > 7)
-#error Invalid UARTxn_BSCALE value, must be between -7 and 7
+#if (UARTXN(_BSCALE) < -6) || (UARTXN(_BSCALE) > 7)
+// limit is -6 and not -7 for 10-bit frames
+// (see "Fractional Baud Rate Generation" constraints in datasheet)
+# error Invalid UARTxn_BSCALE value, must be between -6 and 7
 #endif
 #if UARTXN(_RX_BUF_SIZE) > 255
 # error Invalid UARTxn_RX_BUF_SIZE value, max is 255

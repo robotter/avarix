@@ -19,7 +19,7 @@
 
 /// Baudrate
 #define UART_BAUDRATE  38400
-/// Scale factor used to compute baudrate (from -7 to 7)
+/// Scale factor used to compute baudrate (from -6 to 7)
 #define UART_BSCALE  0
 
 /// Enable UARTxn
