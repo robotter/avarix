@@ -152,6 +152,7 @@ help:
 	@echo "  clean-modules       clean all module objects"
 	@echo "  clean-MODULE        clean objects for module MODULE"
 	@echo "  build/**/*.E        preprocessor output for associated object file"
+	@echo "  get-preproc-DEFINE     output C preprocessor definition"
 	@echo ""
 	@echo "MODULE is a module path, prefixed by 'modules/'."
 	@echo "For instance:  modules/comm/uart"
@@ -264,6 +265,15 @@ $(GEN_COBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(gen_dir)/%.c .force
 $(AOBJS:.o=.E): $(obj_dir)/%.$(HOST).E: $(src_dir)/%.S .force
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -E $< -o $@
+
+# Get greprocessor definition
+
+get-preproc-%:
+	( for x in avr/io.h $(GET_PREPROC_INCLUDES) ; do \
+		  echo '#include <'$$x'>' ; \
+		done ; \
+		echo '$*' ; \
+	) | $(CC) $(CPPFLAGS) -E -x c - | tail -n1
 
 # Other (final) outputs (.hex, .eep) from ELF
 
