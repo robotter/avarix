@@ -90,6 +90,11 @@ else
 FIND_DIR_NAME = find $(1) -name $(2)
 endif
 
+# Prog
+AVRDUDE = avrdude
+AVRDUDE_PART = $(patsubst atxmega%,x%,$(MCU))
+AVRDUDE_CMD = $(AVRDUDE) -p $(AVRDUDE_PART)
+
 -include $(AVARIX_DIR)/mk/common.mk
 
 
@@ -143,6 +148,7 @@ help:
 	@echo "Special goals:"
 	@echo "  all                 build all (default)"
 	@echo "  size                display size of output object"
+	@echo "  prog                program the application"
 	@echo "  defaultconf         retrieve default conf file of all modules"
 	@echo "  defaultconf-MODULE  retrieve default conf file of module MODULE"
 	@echo "  list-modules        list available modules and whether they are enabled"
@@ -285,6 +291,14 @@ get-preproc-%:
 	$(OBJCOPY) -j .eeprom --set-section-flags=.eeprom="alloc,load" \
 		--change-section-lma .eeprom=0 --no-change-warnings \
 		-O $(FORMAT) $< $@
+
+
+# Programming
+
+prog: $(OUTPUTS)
+	$(AVRDUDE_CMD) \
+		-U flash:w:$(TARGET).$(FORMAT_EXTENSION) \
+		-U eeprom:w:$(TARGET).eep
 
 
 # Cleaning
