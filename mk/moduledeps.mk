@@ -13,8 +13,8 @@
 # Each goal is a module name.
 
 new_modules := $(MAKECMDGOALS)
-all_modules += $(new_modules)
-export all_modules
+project_modules += $(new_modules)
+export project_modules
 
 
 # $(append_module_deps module)
@@ -26,7 +26,7 @@ next_modules :=
 $(foreach m,$(new_modules),$(eval $(call append_module_deps,$m)))
 
 # remove duplicates and already processed modules
-next_modules := $(strip $(filter-out $(all_modules),$(sort $(next_modules))))
+next_modules := $(strip $(filter-out $(project_modules),$(sort $(next_modules))))
 
 .DEFAULT_GOAL := default
 
@@ -34,7 +34,7 @@ ifeq ($(new_modules),)
 
 # no more modules
 default:
-	@echo 'ALL_MODULES = $(all_modules)' > $(modules_deps)
+	@echo 'PROJECT_MODULES = $(project_modules)' > $(modules_deps)
 
 else
 

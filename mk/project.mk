@@ -27,7 +27,7 @@ ABS_AVARIX_DIR := $(abspath $(AVARIX_DIR))
 export AVARIX_DIR
 
 # include/compute deps files only for build rules
-clean_rules := clean clean-project clean-modules clean-builddeps
+clean_rules := clean clean-project clean-modules clean-builddeps clean-bootloader
 ifeq ($(filter $(clean_rules),$(MAKECMDGOALS)),)
 export use_deps := yes
 endif
@@ -42,7 +42,8 @@ modules_deps = $(obj_dir)/modules.deps
 export modules_deps
 
 include $(modules_deps)
-MODULES_PATHS = $(addprefix modules/,$(ALL_MODULES))
+PROJECT_MODULES_PATHS = $(addprefix modules/,$(PROJECT_MODULES))
+MODULES_PATHS = $(PROJECT_MODULES_PATHS) bootloader/module
 
 SRC_COBJS = $(SRCS:%.c=$(obj_dir)/%.$(HOST).o)
 GEN_COBJS = $(GEN_SRCS:%.c=$(obj_dir)/%.$(HOST).o)
@@ -51,7 +52,7 @@ AOBJS = $(ASRCS:%.S=$(obj_dir)/%.$(HOST).o)
 OBJS = $(COBJS) $(AOBJS)
 DEPS = $(COBJS:.o=.d)
 GEN_FILES_FULL = $(addprefix $(gen_dir)/,$(GEN_FILES))
-MODULES_LIBS = $(foreach m,$(MODULES_PATHS),$(obj_dir)/$(m).$(HOST).a)
+PROJECT_MODULES_LIBS = $(foreach m,$(PROJECT_MODULES_PATHS),$(obj_dir)/$(m).$(HOST).a)
 PROJECT_LIB = $(obj_dir)/$(TARGET).$(HOST).a
 
 
@@ -118,7 +119,8 @@ LDFLAGS += -mmcu=$(MCU)
 printf_LDFLAGS_minimal := -Wl,-u,vfprintf -lprintf_min
 printf_LDFLAGS_standard :=
 printf_LDFLAGS_advanced := -Wl,-u,vfprintf -lprintf_flt
-LDFLAGS += $(printf_LDFLAGS_$(PRINTF_LEVEL))
+PROJECT_LDFLAGS = $(LDFLAGS)
+PROJECT_LDFLAGS += $(printf_LDFLAGS_$(PRINTF_LEVEL))
 
 else
 
@@ -127,7 +129,7 @@ CPPFLAGS += -DHOST_VERSION
 endif
 
 ifneq ($(filter-out no,$(MATH_LIB)),)
-LDFLAGS += -lm
+PROJECT_LDFLAGS += -lm
 endif
 
 export CPPFLAGS CFLAGS ASFLAGS LDFLAGS
@@ -146,18 +148,22 @@ all: $(OUTPUTS)
 help:
 	@echo ""
 	@echo "Special goals:"
-	@echo "  all                 build all (default)"
-	@echo "  size                display size of output object"
-	@echo "  prog                program the application"
-	@echo "  defaultconf         retrieve default conf file of all modules"
-	@echo "  defaultconf-MODULE  retrieve default conf file of module MODULE"
-	@echo "  list-modules        list available modules and whether they are enabled"
-	@echo "  MODULE              build module MODULE"
-	@echo "  clean               clean all"
-	@echo "  clean-project       clean project objects and outputs"
-	@echo "  clean-modules       clean all module objects"
-	@echo "  clean-MODULE        clean objects for module MODULE"
-	@echo "  build/**/*.E        preprocessor output for associated object file"
+	@echo "  all                   build all (default)"
+	@echo "  size                  display size of output object"
+	@echo "  bootloader            build bootloader"
+	@echo "  bootloader-size       display bootloader size"
+	@echo "  prog                  program the application"
+	@echo "  prog-bootloader       program the bootloader"
+	@echo "  prog-bootloader-fuse  program the bootloader fuse if needed"
+	@echo "  defaultconf           retrieve default conf file of all modules"
+	@echo "  defaultconf-MODULE    retrieve default conf file of module MODULE"
+	@echo "  list-modules          list available modules and whether they are enabled"
+	@echo "  MODULE                build module MODULE"
+	@echo "  clean                 clean all"
+	@echo "  clean-project         clean project objects and outputs"
+	@echo "  clean-modules         clean all module objects"
+	@echo "  clean-MODULE          clean objects for module MODULE"
+	@echo "  build/**/*.E          preprocessor output for associated object file"
 	@echo "  get-preproc-DEFINE     output C preprocessor definition"
 	@echo ""
 	@echo "MODULE is a module path, prefixed by 'modules/'."
@@ -214,7 +220,7 @@ defaultconf: $(addprefix defaultconf-,$(MODULES_PATHS))
 # search if list-modules is not "called"
 modules_list = $(patsubst $(AVARIX_DIR)/modules/%/config.mk,%,$(shell $(call FIND_DIR_NAME,$(AVARIX_DIR)/modules,config.mk)))
 define list_modules_rule_tpl
-	@echo " $(if $(findstring $(1),$(ALL_MODULES)),+, ) $(1)"
+	@echo " $(if $(findstring $(1),$(PROJECT_MODULES)),+, ) $(1)"
 
 endef
 
@@ -224,8 +230,8 @@ list-modules:
 
 # Project outputs
 
-$(TARGET_OBJ): $(MODULES_LIBS) $(PROJECT_LIB)
-	$(CC) $(PROJECT_LIB) $(MODULES_LIBS) -o $@ $(LDFLAGS)
+$(TARGET_OBJ): $(PROJECT_MODULES_LIBS) $(PROJECT_LIB)
+	$(CC) $(PROJECT_LIB) $(PROJECT_MODULES_LIBS) -o $@ $(PROJECT_LDFLAGS)
 
 # project objects, with renamed sections
 $(PROJECT_LIB): $(OBJS)
@@ -242,7 +248,7 @@ size:
 
 # Make sure to generate files first
 $(OBJS): $(GEN_FILES_FULL)
-$(OBJS): $(MODULES_LIBS)
+$(OBJS): $(PROJECT_MODULES_LIBS)
 
 # Usual object files
 
@@ -293,6 +299,10 @@ get-preproc-%:
 		-O $(FORMAT) $< $@
 
 
+# Add bootloader rules
+-include $(AVARIX_DIR)/mk/bootloader.mk
+
+
 # Programming
 
 prog: $(OUTPUTS)
@@ -303,7 +313,7 @@ prog: $(OUTPUTS)
 
 # Cleaning
 
-clean: clean-project clean-modules
+clean: clean-project clean-modules clean-bootloader
 	-rmdir -p $(sort $(obj_dir) $(gen_dir) $(dir $(OBJS) $(GEN_FILES_FULL))) 2>/dev/null
 
 clean-project:
