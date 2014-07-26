@@ -4,27 +4,9 @@
  */
 
 #include <stdint.h>
+#include <avarix/register.h>
 #include <avarix/intlvl.h>
 #include "clock.h"
-
-
-/** @brief Write a protected I/O register
- * @todo Should be put in a dedicated module or header.
- */
-static void ccp_io_write(volatile uint8_t *addr, uint8_t value)
-{
-  INTLVL_DISABLE_ALL_BLOCK() {
-    asm volatile (
-        "out  %0, %1\n\t"
-        "st   Z, %3\n\t"
-        :
-        : "i" (&CCP)
-        , "r" (CCP_IOREG_gc)
-        , "z" ((uint16_t)addr)
-        , "r" (value)
-        );
-  }
-}
 
 
 /// Enable an oscillator and wait for it to be ready
