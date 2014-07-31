@@ -49,7 +49,7 @@ prog-bootloader: bootloader
 prog-bootloader-fuse:
 	b=$$($(AVRDUDE_CMD) -qq -U $(bootrst_fusebyte):r:-:d) ; \
 	if (( b & (1<<$(bootrst_bit)) )); then \
-		$(AVRDUDE_CMD) -U $(bootrst_fusebyte):w:$$(( b & ~(1<<$(bootrst_bit)) )):d \
+		$(AVRDUDE_CMD) -U $(bootrst_fusebyte):w:$$(( b & ~(1<<$(bootrst_bit)) )):d ; \
 		fi
 
 
