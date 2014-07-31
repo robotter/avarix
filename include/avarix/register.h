@@ -16,7 +16,7 @@
  * @note This can be achieved in less cycles for some I/O registers but this way
  * is generic.
  */
-inline void ccp_io_write(volatile uint8_t* addr, uint8_t value)
+static inline void ccp_io_write(volatile uint8_t* addr, uint8_t value)
 {
   asm volatile (
       "out  %0, %1\n\t"
