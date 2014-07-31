@@ -8,7 +8,7 @@
  *  - define and implement a \ref rome_handler_t "frame handler"
  *  - initialize a \ref rome_intf_t "ROME interface"
  *  - call rome_intf_update() regularly to process input data
- * 
+ *
  * The frame handler is set on the interface and called when a valid frame
  * has been received.
  */

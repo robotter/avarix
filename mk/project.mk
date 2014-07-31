@@ -65,7 +65,7 @@ OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size
 NM = avr-nm
-TARGET_OBJ = $(TARGET).elf 
+TARGET_OBJ = $(TARGET).elf
 OUTPUTS = $(TARGET).$(FORMAT_EXTENSION) $(TARGET).eep
 else
 CC = gcc
@@ -111,7 +111,7 @@ ASFLAGS +=
 
 ifeq ($(HOST),avr)
 
-CPPFLAGS += -mmcu=$(MCU) 
+CPPFLAGS += -mmcu=$(MCU)
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 ASFLAGS += -Wa,-gstabs
 LDFLAGS += -mmcu=$(MCU)

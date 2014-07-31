@@ -62,7 +62,7 @@
 
 
 /** @brief ADXRS gyro data
- * 
+ *
  * The \e response field contains data of the last received response, i.e. the
  * response to the penultimate command.
  * It is updated by \ref adxrs_parse_response().

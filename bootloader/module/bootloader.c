@@ -106,7 +106,7 @@ static uint8_t boot_lock_fuse_bits_get(uint8_t offset)
 static void wdt_disable(void)
 {
   ccp_io_write(&WDT.CTRL, (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm);
-} 
+}
 
 
 /** @brief Run the application
