@@ -43,14 +43,13 @@ bootrst_bit = 6
 
 prog-bootloader: bootloader
 	$(AVRDUDE_CMD) -U boot:w:$(BOOTLOADER_OUTPUT)
-	@(( $$($(AVRDUDE_CMD) -qq -U $(bootrst_fusebyte):r:-:d) & (1<<$(bootrst_bit)) )) && \
+	@[ $$(( $$($(AVRDUDE_CMD) -qq -U $(bootrst_fusebyte):r:-:d) & (1<<$(bootrst_bit)) )) = 0 ] || \
 		echo "BOOTRST fuse bit not configured, run 'make prog-bootloader-fuse'."
 
 prog-bootloader-fuse:
 	b=$$($(AVRDUDE_CMD) -qq -U $(bootrst_fusebyte):r:-:d) ; \
-	if (( b & (1<<$(bootrst_bit)) )); then \
-		$(AVRDUDE_CMD) -U $(bootrst_fusebyte):w:$$(( b & ~(1<<$(bootrst_bit)) )):d ; \
-		fi
+	[ $$(( b & (1<<$(bootrst_bit)) )) = 0 ] || \
+		$(AVRDUDE_CMD) -U $(bootrst_fusebyte):w:$$(( b & ~(1<<$(bootrst_bit)) )):d
 
 
 # Cleaning
