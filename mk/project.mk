@@ -41,9 +41,9 @@ this_makefile := $(lastword $(MAKEFILE_LIST))
 modules_deps = $(obj_dir)/modules.deps
 export modules_deps
 
-include $(modules_deps)
+-include $(modules_deps)
 PROJECT_MODULES_PATHS = $(addprefix modules/,$(PROJECT_MODULES))
-MODULES_PATHS = $(PROJECT_MODULES_PATHS) bootloader/module
+MODULES_PATHS = $(sort $(PROJECT_MODULES_PATHS) bootloader/module $(BOOTLOADER_MODULES_PATHS))
 
 SRC_COBJS = $(SRCS:%.c=$(obj_dir)/%.$(HOST).o)
 GEN_COBJS = $(GEN_SRCS:%.c=$(obj_dir)/%.$(HOST).o)
