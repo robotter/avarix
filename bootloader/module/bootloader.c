@@ -348,7 +348,6 @@ static void boot(void)
  *
  * @note The reply size is never 0 since it includes at least the status code.
  *
- * \e SZ designates a null-terminated string. Addresses are provided as u32.
  * All values are coded in little-endian.
  */
 //@{
@@ -390,7 +389,7 @@ static void cmd_execute(void)
 
 /** @brief Program a page
  *
- * When using CRC check, the page is now written on mismatch.
+ * When using CRC check, the page is not written on mismatch.
  *
  * Parameters:
  *  - page address (u32), must be aligned

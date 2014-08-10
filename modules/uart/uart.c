@@ -13,11 +13,13 @@
 #endif
 
 // Detect when at least one uart is enabled
+#ifndef DOXYGEN
 #define UART_EXPR(xn)  +1
 #if (0 UART_ALL_APPLY_EXPR(UART_EXPR))
 #define UART_HAS_UART_ENABLED
 #endif
 #undef UART_EXPR
+#endif
 
 
 /** @brief Circular FIFO buffer for UART data

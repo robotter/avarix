@@ -176,7 +176,7 @@ bool adxrs_startup(void);
  * Capture period is determined by SPI period.
  *
  * An alternate mode not using interruptions is available. Values are retrieved
- * manually using \ref adxrs_capture_next().
+ * manually using \ref adxrs_capture_manual().
  *
  * Angle values are in radians, between -Pi and Pi.
  */
