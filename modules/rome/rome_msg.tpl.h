@@ -6,11 +6,27 @@
  *
  * @note
  * This file is generated.
- * Generated symbols for a \e dummy message are provided.
+ * Generated symbols for a \e dummy message and a \e fake order are provided.
  */
 #ifndef ROME_MSG_H__
 #define ROME_MSG_H__
 
+// check ROME_ACK_MIN and ROME_ACK_MAX
+#if (defined ROME_ACK_MIN) && !(defined ROME_ACK_MAX)
+# error ROME_ACK_MIN defined but ROME_ACK_MAX is not
+#elif (defined ROME_ACK_MAX) && !(defined ROME_ACK_MIN)
+# error ROME_ACK_MAX defined but ROME_ACK_MIN is not
+#elif (defined ROME_ACK_MIN) && (defined ROME_ACK_MAX)
+# if ROME_ACK_MIN < 0 || ROME_ACK_MIN > 255
+#  error ROME_ACK_MIN is out of range
+# elif ROME_ACK_MAX < 0 || ROME_ACK_MAX > 255
+#  error ROME_ACK_MAX is out of range
+# elif ROME_ACK_MAX < ROME_ACK_MIN
+#  error ROME_ACK_MAX must be greater or equal than ROME_ACK_MIN
+# endif
+#endif
+
+// include after checks of min/max values, on purpose
 #include <rome/rome.h>
 
 
@@ -19,6 +35,7 @@
 /// ROME message IDs
 typedef enum {
   ROME_MID_DUMMY = 0x42,
+  ROME_MID_FAKE = 0x43,
 } rome_mid_t;
 
 /// ROME frame
@@ -32,6 +49,11 @@ typedef struct {
       uint8_t a;
       int16_t b;
     } dummy;
+    /// Data of fake order
+    struct {
+      uint8_t _ack;
+      uint16_t x;
+    } fake;
   };
 } __attribute__((__packed__)) rome_frame_t;
 
@@ -64,6 +86,15 @@ typedef struct {
 
 /// Send a dummy message
 #define ROME_SEND_DUMMY(intf, a, b)
+
+/// Set data of a fake order frame
+#define ROME_SET_FAKE(frame, _ack, x)
+
+/// Send a fake order
+#define ROME_SEND_FAKE(intf, _ack, x)
+
+/// Send a fake order until an ACK is received
+#define ROME_SENDWAIT_FAKE(intf, x)
 
 //@}
 

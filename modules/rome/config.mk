@@ -1,5 +1,5 @@
 SRCS = rome.c
-MODULES = uart
+MODULES = uart timer
 
 GEN_FILES = rome_msg.h
 

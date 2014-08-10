@@ -38,7 +38,9 @@ class CodeGenerator:
   def msgdata_union_fields(self):
     ret = ''
     for msg in self.messages:
-      fields = ( '%s %s;' % (self.c_typename(t), v) for v,t in msg.ptypes )
+      fields = [ '%s %s;' % (self.c_typename(t), v) for v,t in msg.ptypes ]
+      if isinstance(msg, rome.frame.Order):
+        fields.insert(0, 'uint8_t _ack;')
       ret += '\n    struct {\n%s    } %s;\n' % (
           ''.join( '      %s\n'%s for s in fields ),
           msg.name,
@@ -54,26 +56,52 @@ class CodeGenerator:
     set_params = ''.join(
         '  (_f)->%s.%s = (_a_%s); \\\n' % (msg.name, v, v)
         for v,t in msg.ptypes )
+    if isinstance(msg, rome.frame.Order):
+      param_ack = ', _a_ack'
+      paren_ack = ', (_a_ack)'
+      set_ack = '  (_f)->%s._ack = (_a_ack); \\\n' % msg.name
+    else:
+      param_ack = ''
+      paren_ack = ''
+      set_ack = ''
 
-    return (
-        '#define ROME_SET_%(NAME)s(_f%(pnames)s) do { \\\n'
+    tpl = (
+        '#define ROME_SET_%(NAME)s(_f%(param_ack)s%(pnames)s) do { \\\n'
         '  (_f)->plsize = %(plsize)s; \\\n'
         '  (_f)->mid = %(MID)s; \\\n'
-        '%(set_params)s'
-        '} while(0)\n\n'
+        '%(set_ack)s%(set_params)s'
+        '} while(0)\n'
         '\n'
-        '#define ROME_SEND_%(NAME)s(_i%(pnames)s) do { \\\n'
+        '#define ROME_SEND_%(NAME)s(_i%(param_ack)s%(pnames)s) do { \\\n'
         '  rome_frame_t _frame; \\\n'
-        '  ROME_SET_%(NAME)s(&_frame%(paren_pnames)s); \\\n'
+        '  ROME_SET_%(NAME)s(&_frame%(paren_ack)s%(paren_pnames)s); \\\n'
         '  rome_send((_i), &_frame); \\\n'
-        '} while(0)\n\n'
-        ) % {
+        '} while(0)\n'
+        '\n'
+        )
+
+    if isinstance(msg, rome.frame.Order):
+      tpl += (
+          '#ifdef ROME_ACK_MIN\n'
+          '#define ROME_SENDWAIT_%(NAME)s(_i%(pnames)s) do { \\\n'
+          '  rome_frame_t _frame; \\\n'
+          '  ROME_SET_%(NAME)s(&_frame, 0%(paren_pnames)s); \\\n'
+          '  rome_sendwait((_i), &_frame); \\\n'
+          '} while(0)\n'
+          '#endif\n'
+          '\n'
+          )
+
+    return tpl % {
             'NAME': msg.name.upper(),
             'pnames': ''.join(', '+s for s in pnames),
             'paren_pnames': ''.join(', (%s)' % s for s in pnames),
             'plsize': msg.plsize,
             'MID': cls.mid_enum_name(msg),
             'set_params': set_params,
+            'param_ack': param_ack,
+            'paren_ack': paren_ack,
+            'set_ack': set_ack,
             }
 
   def macro_helpers(self):

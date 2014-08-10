@@ -4,6 +4,10 @@
  */
 #include <util/crc16.h>
 #include "rome.h"
+#ifdef ROME_ACK_MIN
+#include <timer/uptime.h>
+#include <idle/idle.h>
+#endif
 
 
 /// Frame start byte
@@ -118,5 +122,76 @@ void rome_send(rome_intf_t *intf, const rome_frame_t *frame)
   }
 }
 
+
+void rome_reply_ack(rome_intf_t *intf, const rome_frame_t *frame)
+{
+  ROME_SEND_ACK(intf, frame->_data[0]);
+}
+
+#ifdef ROME_ACK_MIN
+
+#define ROME_ACK_COUNT  (ROME_ACK_MAX-ROME_ACK_MIN+1)
+
+/// Array of ACK values, value is true when an ACK is expected
+static uint8_t rome_active_acks[ROME_ACK_COUNT];
+
+uint8_t rome_next_ack(void)
+{
+  static uint8_t ack = ROME_ACK_MAX; // MAX so that MIN is the first value to be used
+  uint8_t ret;
+  // an available value should be found quickly
+  // it's not risky to lock the loop
+  ROME_SEND_INTLVL_DISABLE() {
+    // if the whole ACK range is used, an uint8_t is not enough
+#if ROME_ACK_COUNT > 255
+    uint16_t i;
+#else
+    uint8_t i;
+#endif
+    for(i=0; i<ROME_ACK_COUNT; i++) {
+      ack = ack == ROME_ACK_MAX ? ROME_ACK_MIN : ack+1;
+      if(!rome_active_acks[ack-ROME_ACK_MIN]) {
+        break;
+      }
+    }
+    // also reached if all values are already in use
+    ret = ack;
+    rome_active_acks[ret] = true;
+  }
+  return ret;
+}
+
+bool rome_ack_expected(uint8_t ack)
+{
+  return rome_active_acks[ack-ROME_ACK_MIN];
+}
+
+void rome_free_ack(uint8_t ack)
+{
+  rome_active_acks[ack-ROME_ACK_MIN] = false;
+}
+
+
+void rome_sendwait(rome_intf_t *intf, rome_frame_t *frame)
+{
+  for(;;) {
+    // send the frame with a new ACK value
+    uint8_t ack = rome_next_ack();
+    frame->_data[0] = ack;
+    rome_send(intf, frame);
+    // wait for the ACK
+    uint32_t tend = uptime_us() + ROME_ACK_TIMEOUT_US;
+    do {
+      ROME_SEND_INTLVL_DISABLE() {
+        if(!rome_active_acks[ack-ROME_ACK_MIN]) {
+          return;
+        }
+        idle();
+      }
+    } while(uptime_us() < tend);
+  }
+}
+
+#endif
 
 ///@endcond
