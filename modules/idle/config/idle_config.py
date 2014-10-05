@@ -1,8 +1,10 @@
 # Idle tasks configuration
 
-## Set maximum frequency
-# set_max_frequency(100)
+# Set minimum period (in microseconds)
+#set_min_period(100)
 
-## Add a task
-# add_task(name, frequency, cost)
+# Add a task always executed
+#add_task(name, None)
+# Add a task executed at regular intervals
+#add_task(name, period, cost)
 

@@ -8,12 +8,11 @@
  * To use this module, first configure tasks in idle_config.py.
  * For instance:
  * \code{.py}
- * # Set maximum frequency
- * set_max_frequency(100)
+ * # Set minimum period (in microseconds)
+ * set_min_period(100)  # 0.1ms
  * # Add tasks
- * add_task('always', 100, 1)    # task always executed (max frequency)
- * add_task('rarely', 1, 5)      # task rarely executed (min frequency)
- * add_task('telemetry', 20, 3)
+ * add_task('always', None)    # always executed when idle
+ * add_task('periodic', 100000, 5)  # executed every 10ms
  * \endcode
  *
  * Define callback methods and set them (usually in initialization code):

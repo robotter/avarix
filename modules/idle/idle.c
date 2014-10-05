@@ -1,17 +1,18 @@
 #include <stdint.h>
+#include <timer/uptime.h>
 #include "idle.h"
 
 
-/// Idle task data
+/// Idle peridoic task data
 typedef struct {
   /// Function called when task is executed
   idle_callback_t callback;
-  /// Number of idle() call between executions
-  uint8_t period;
-  /// Offset at which the task is executed
-  uint8_t offset;
+  /// Executiod period, in microseconds
+  uint32_t period;
+  /// Uptime of the next execution
+  uint32_t next;
 
-} idle_task_t;
+} idle_periodic_task_t;
 
 
 #include "idle/idle_tasks.inc.c"
@@ -19,20 +20,37 @@ typedef struct {
 
 void idle(void)
 {
-  static uint16_t counter;
-  for(uint8_t i=0; i<sizeof(idle_tasks)/sizeof(*idle_tasks); i++) {
-    if(idle_tasks[i].callback) {
-      if(counter % idle_tasks[i].period == idle_tasks[i].offset) {
-        idle_tasks[i].callback();
+#if IDLE_ALWAYS_TASKS_COUNT > 0
+  for(uint8_t i=0; i<IDLE_ALWAYS_TASKS_COUNT; i++) {
+    if(idle_always_callbacks[i]) {
+      idle_always_callbacks[i]();
+    }
+  }
+#endif
+
+  uint32_t now = uptime_us();
+  for(uint8_t i=0; i<IDLE_PERIODIC_TASKS_END; i++) {
+    idle_periodic_task_t *task = &idle_periodic_tasks[i];
+    if(task->callback) {
+      if(now >= task->next) {
+        task->callback();
+        task->next += task->period;
       }
     }
   }
-  counter++;
 }
 
 
 void idle_set_callback_(uint8_t index, idle_callback_t cb)
 {
-  idle_tasks[index].callback = cb;
+#if IDLE_ALWAYS_TASKS_COUNT > 0
+  if(index >= IDLE_PERIODIC_TASKS_END) {
+    idle_always_callbacks[index-IDLE_PERIODIC_TASKS_END] = cb;
+  } else
+#endif
+  {
+    idle_periodic_tasks[index].callback = cb;
+    idle_periodic_tasks[index].next = uptime_us();
+  }
 }
 

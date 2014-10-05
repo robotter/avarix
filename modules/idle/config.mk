@@ -1,4 +1,5 @@
 SRCS = idle.c
+MODULES = timer
 CONFIGS = config/idle_config.py
 
 GEN_FILES = idle_tasks.inc.c idle_tasks.h
