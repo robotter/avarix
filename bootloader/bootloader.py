@@ -331,7 +331,6 @@ class Client(BaseClient):
 
   Attributes:
     pagesize -- server's page size
-    verbose -- print transferred data on stderr if True
 
   """
 
@@ -339,7 +338,6 @@ class Client(BaseClient):
   UNUSED_BYTE = '\xFF'  # value of programmed unused bytes
 
   def __init__(self, conn, **kw):
-    self.verbose = kw.get('verbose', False)
     BaseClient.__init__(self, conn)
 
     if hasattr(conn, 'eof') and callable(conn.eof):
@@ -558,22 +556,15 @@ class Client(BaseClient):
     """Return the pages from p1 not in p2"""
     return sorted(set(p1) - set(p2))
 
-
   # Output
-
   def output_read(self, data):
-    if self.verbose:
-      sys.stderr.write(" << %r\n" % data)
+    pass
   def output_write(self, data):
-    if self.verbose:
-      sys.stderr.write(" >> %r\n" % data)
-
+    pass
   def output_program_progress(self, ncur, nmax):
-    sys.stdout.write("\rprogramming: page %3d / %3d  -- %2.2f%%"
-                          % (ncur, nmax, (100.0*ncur)/nmax))
-    sys.stdout.flush()
+    pass
   def output_program_end(self):
-    sys.stdout.write("\n")
+    pass
 
 
 
@@ -625,7 +616,27 @@ def main():
   # connect to serial line and setup stdin/out
   conn = Serial(args.port, args.baudrate, timeout=0.5)
 
-  client = Client(conn, verbose=args.verbose, init_send=args.init_send)
+  class CliClient(Client):
+    def __init__(self, conn, **kw):
+      self.verbose = kw.get('verbose', False)
+      Client.__init__(self, conn, **kw)
+
+    def output_read(self, data):
+      if self.verbose:
+        sys.stderr.write(" << %r\n" % data)
+    def output_write(self, data):
+      if self.verbose:
+        sys.stderr.write(" >> %r\n" % data)
+
+    def output_program_progress(self, ncur, nmax):
+      sys.stdout.write("\rprogramming: page %3d / %3d  -- %2.2f%%"
+                            % (ncur, nmax, (100.0*ncur)/nmax))
+      sys.stdout.flush()
+    def output_program_end(self):
+      sys.stdout.write("\n")
+
+
+  client = CliClient(conn, verbose=args.verbose, init_send=args.init_send)
   print "bootloader waiting..."
   client.synchronize()
   client.update_infos()
