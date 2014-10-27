@@ -3,7 +3,9 @@
 import re
 import sys
 import struct
+import time
 from serial import Serial
+from contextlib import contextmanager
 
 
 def load_hex(f):
@@ -101,6 +103,10 @@ def split_hex_chunks(chunks, size, fill):
   return ret
 
 
+class TimeoutError(RuntimeError):
+  pass
+
+
 class BaseClient(object):
   """
   Low-level Client for the Rob'Otter Bootloader
@@ -119,7 +125,7 @@ class BaseClient(object):
     """Initialize the client
 
     conn is an UART connection object with the following requirements:
-     - it must be blocking
+     - should not be non-blocking (it may block only for a given period)
      - write() and read(1) must be implemented
 
     Note: methods assume that their are no pending data in the input queue
@@ -127,6 +133,7 @@ class BaseClient(object):
 
     """
     self.conn = conn
+    self.__tend = None
 
 
   # Data transmission
@@ -139,8 +146,14 @@ class BaseClient(object):
   def recv_raw(self, n):
     """Receive raw data from the server"""
     buf = ''
-    for i in range(n):
-      buf += self.conn.read(1)
+    if self.__tend and time.time() > self.__tend:
+      raise TimeoutError()
+    while len(buf) < n:
+      c = self.conn.read(1)
+      if c != '':
+        buf += c
+      elif self.__tend and time.time() > self.__tend:
+        raise TimeoutError()
     self.output_read(buf)
     return buf
 
@@ -241,6 +254,28 @@ class BaseClient(object):
     if not r:
       return False
     return True
+
+
+  # Timeout handling
+
+  @contextmanager
+  def timeout(self, t):
+    """Return a context to use as a timeout wrapper
+
+    Timeout value is provided in seconds.
+    After each read that returned nothing, and before each recv_raw() call, if
+    the given duration is expired, a TimeoutError is raised.
+
+    Note that actual behavior highly depends on the connection file object.
+    When using PySerial, it depends on the Serial's timeout value.
+    """
+    if self.__tend is not None:
+      raise RuntimeError("recursive timeout() call")
+    try:
+      self.__tend = time.time() + t
+      yield
+    finally:
+      self.__tend = None
 
 
   # Output (default: do nothing)
