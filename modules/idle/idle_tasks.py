@@ -121,7 +121,10 @@ class CodeGenerator:
 
   def slot_count(self):
     # lowest common multiple of all periods
-    return reduce(lcm, ( t.period/self.min_period for t in self.tasks if t.period is not None ))
+    periods = [ t.period/self.min_period for t in self.tasks if t.period is not None ]
+    if not len(periods):
+      return 0
+    return reduce(lcm, periods)
 
   def periodic_tasks_end(self):
     for i, task in enumerate(self.tasks):
