@@ -41,23 +41,23 @@
 static void boot_flash_page_fill(uint32_t address, uint16_t word)
 {
   asm volatile (
-    "movw r0, %5\n"  // set word data to r0:r1
-    "sts %4, %C3\n"  // set RAMPZ
-    "sts %0, %1\n"   // set NVM.CMD for load command
-    "sts %6, %7\n"   // disable CCP protection
-    "spm\n"          // execute SPM operation
-    "clr r1\n"       // clear r1, GCC's __zero_reg__
-    "sts %0, %8\n"   // clear NVM.CMD
+    "movw r0, %[word]\n"          // set word data to r0:r1
+    "sts %[rampz], %C[addr32]\n"  // set RAMPZ
+    "sts %[nvmcmd], %[cmdval]\n"  // set NVM.CMD for load command
+    "sts %[ccp], %[ccpspm]\n"     // disable CCP protection
+    "spm\n"                       // execute SPM operation
+    "clr r1\n"                    // clear r1, GCC's __zero_reg__
+    "sts %[nvmcmd], %[cmdnop]\n"  // clear NVM.CMD
     :
-    : "i" (_SFR_MEM_ADDR(NVM_CMD)),
-      "r" ((uint8_t)(NVM_CMD_LOAD_FLASH_BUFFER_gc)),
-      "z" ((uint16_t)(address)),
-      "r" ((uint32_t)(address)),
-      "i" (_SFR_MEM_ADDR(RAMPZ)),
-      "r" ((uint16_t)(word)),
-      "i" (_SFR_MEM_ADDR(CCP)),
-      "r" ((uint8_t)(CCP_SPM_gc)),
-      "r" ((uint8_t)(NVM_CMD_NO_OPERATION_gc))
+    : [nvmcmd] "i" (_SFR_MEM_ADDR(NVM_CMD))
+    , [cmdval] "r" ((uint8_t)(NVM_CMD_LOAD_FLASH_BUFFER_gc))
+    , [cmdnop] "r" ((uint8_t)(NVM_CMD_NO_OPERATION_gc))
+    , [ccp]    "i" (_SFR_MEM_ADDR(CCP))
+    , [ccpspm] "r" ((uint8_t)(CCP_SPM_gc))
+    ,          "z" ((uint16_t)(address))
+    , [addr32] "r" ((uint32_t)(address))
+    , [rampz]  "i" (_SFR_MEM_ADDR(RAMPZ))
+    , [word]   "r" ((uint16_t)(word))
     : "r0"
   );
 }
@@ -67,21 +67,21 @@ static void boot_flash_page_fill(uint32_t address, uint16_t word)
 static void boot_app_page_erase_write(uint32_t address)
 {
   asm volatile (
-    "sts %4, %C3\n"  // set RAMPZ
-    "sts %0, %1\n"   // set NVM.CMD for load command
-    "sts %5, %6\n"   // disable CCP protection
-    "spm\n"          // execute SPM operation
-    "clr r1\n"       // clear r1, GCC's __zero_reg__
-    "sts %0, %7\n"   // clear NVM.CMD
+    "sts %[rampz], %C[addr32]\n"  // set RAMPZ
+    "sts %[nvmcmd], %[cmdval]\n"  // set NVM.CMD for load command
+    "sts %[ccp], %[ccpspm]\n"     // disable CCP protection
+    "spm\n"                       // execute SPM operation
+    "clr r1\n"                    // clear r1, GCC's __zero_reg__
+    "sts %[nvmcmd], %[cmdnop]\n"  // clear NVM.CMD
     :
-    : "i" (_SFR_MEM_ADDR(NVM_CMD)),
-      "r" ((uint8_t)(NVM_CMD_ERASE_WRITE_APP_PAGE_gc)),
-      "z" ((uint16_t)(address)),
-      "r" ((uint32_t)(address)),
-      "i" (_SFR_MEM_ADDR(RAMPZ)),
-      "i" (_SFR_MEM_ADDR(CCP)),
-      "r" ((uint8_t)(CCP_SPM_gc)),
-      "r" ((uint8_t)(NVM_CMD_NO_OPERATION_gc))
+    : [nvmcmd] "i" (_SFR_MEM_ADDR(NVM_CMD))
+    , [cmdval] "r" ((uint8_t)(NVM_CMD_ERASE_WRITE_APP_PAGE_gc))
+    , [cmdnop] "r" ((uint8_t)(NVM_CMD_NO_OPERATION_gc))
+    , [ccp]    "i" (_SFR_MEM_ADDR(CCP))
+    , [ccpspm] "r" ((uint8_t)(CCP_SPM_gc))
+    ,          "z" ((uint16_t)(address))
+    , [addr32] "r" ((uint32_t)(address))
+    , [rampz]  "i" (_SFR_MEM_ADDR(RAMPZ))
   );
 }
 

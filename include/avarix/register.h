@@ -19,13 +19,13 @@
 static inline void ccp_io_write(volatile uint8_t* addr, uint8_t value)
 {
   asm volatile (
-      "out  %0, %1\n\t"
-      "st   Z, %3\n\t"
+      "out  %[ccp], %[ccp_ioreg]\n"
+      "st   Z, %[val]\n"
       :
-      : "i" (&CCP)
-      , "r" (CCP_IOREG_gc)
-      , "z" ((uint16_t)addr)
-      , "r" (value)
+      : [ccp]       "i" (&CCP)
+      , [ccp_ioreg] "r" (CCP_IOREG_gc)
+      ,             "z" ((uint16_t)addr)
+      , [val]       "r" (value)
       );
 }
 
