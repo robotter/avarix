@@ -23,6 +23,7 @@
 #include <util/delay.h>
 #include <avarix/portpin.h>
 #include <avarix/register.h>
+#include <avarix/signature.h>
 #include "bootloader_config.h"
 
 
@@ -81,6 +82,42 @@ static void boot_app_page_erase_write(uint32_t address)
     ,          "z" ((uint16_t)(address))
     , [addr32] "r" ((uint32_t)(address))
     , [rampz]  "i" (_SFR_MEM_ADDR(RAMPZ))
+  );
+}
+
+
+/// Erase user signature page
+static void boot_user_sig_erase(void)
+{
+  asm volatile (
+    "sts %[nvmcmd], %[cmdval]\n"  // set NVM.CMD for load command
+    "sts %[ccp], %[ccpspm]\n"     // disable CCP protection
+    "spm\n"                       // execute SPM operation
+    "sts %[nvmcmd], %[cmdnop]\n"  // clear NVM.CMD
+    :
+    : [nvmcmd] "i" (_SFR_MEM_ADDR(NVM_CMD))
+    , [cmdval] "r" ((uint8_t)(NVM_CMD_ERASE_USER_SIG_ROW_gc))
+    , [cmdnop] "r" ((uint8_t)(NVM_CMD_NO_OPERATION_gc))
+    , [ccp]    "i" (_SFR_MEM_ADDR(CCP))
+    , [ccpspm] "r" ((uint8_t)(CCP_SPM_gc))
+  );
+}
+
+
+/// Write user signature page
+static void boot_user_sig_write(void)
+{
+  asm volatile (
+    "sts %[nvmcmd], %[cmdval]\n"  // set NVM.CMD for load command
+    "sts %[ccp], %[ccpspm]\n"     // disable CCP protection
+    "spm\n"                       // execute SPM operation
+    "sts %[nvmcmd], %[cmdnop]\n"  // clear NVM.CMD
+    :
+    : [nvmcmd] "i" (_SFR_MEM_ADDR(NVM_CMD))
+    , [cmdval] "r" ((uint8_t)(NVM_CMD_WRITE_USER_SIG_ROW_gc))
+    , [cmdnop] "r" ((uint8_t)(NVM_CMD_NO_OPERATION_gc))
+    , [ccp]    "i" (_SFR_MEM_ADDR(CCP))
+    , [ccpspm] "r" ((uint8_t)(CCP_SPM_gc))
   );
 }
 
@@ -465,6 +502,68 @@ static void cmd_mem_crc(void)
 }
 
 
+/** @brief Read the user signature
+ *
+ * Reply fields: data (variable size)
+ */
+static void cmd_read_user_sig(void)
+{
+  user_sig_t sig;
+  user_sig_read(&sig);
+
+  reply_success(sizeof(sig));
+  send_buf((void*)&sig, sizeof(sig));
+}
+
+
+/** @brief Program the user signature page
+ *
+ * The page is not written on CRC mismatch.
+ *
+ * Parameters:
+ *  - CRC (u16)
+ *  - data size (u8)
+ *  - data
+ */
+static void cmd_prog_user_sig(void)
+{
+  const uint16_t crc_expected = recv_u16();
+  uint16_t crc = 0xffff;
+
+  // Read data, fill temporary page buffer, compute CRC
+  const uint8_t size = recv_u8();
+  for(uint8_t i=0; i<size; i++) {
+    uint8_t c1 = recv_u8();
+    crc = _crc_ccitt_update(crc, c1);
+    i++;
+    uint8_t c2;
+    if(i < size) {
+      c2 = recv_u8();
+      crc = _crc_ccitt_update(crc, c2);
+    } else {
+      c2 = 0;
+    }
+    uint16_t w = c1 + (c2 << 8); // little endian word
+    // note: this sets RAMPZ even if it's not necessary
+    boot_flash_page_fill(i, w);
+  }
+
+  // check CRC
+  if(crc != crc_expected) {
+    reply_error(STATUS_CRC_MISMATCH);
+    return;
+  }
+
+  // Erase and write the page
+  boot_user_sig_erase();
+  boot_nvm_busy_wait();
+  boot_user_sig_write();
+  boot_nvm_busy_wait();
+
+  reply_success(0);
+}
+
+
 /** @brief Dump fuse values
  *
  * Reply fields: fuses as u8s (6 bytes).
@@ -530,6 +629,8 @@ int main(void)
     else if(c == 'p') cmd_prog_page();
     else if(c == 'c') cmd_mem_crc();
     else if(c == 'f') cmd_fuse_read();
+    else if(c == 's') cmd_read_user_sig();
+    else if(c == 'S') cmd_prog_user_sig();
     else {
       reply_error(STATUS_UNKNOWN_COMMAND);
     }

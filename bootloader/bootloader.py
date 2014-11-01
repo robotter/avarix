@@ -6,6 +6,7 @@ import struct
 import time
 from serial import Serial
 from contextlib import contextmanager
+from getpass import getuser
 
 
 def load_hex(f):
@@ -105,6 +106,58 @@ def split_hex_chunks(chunks, size, fill):
 
 class TimeoutError(RuntimeError):
   pass
+
+
+class UserSig:
+  """
+  User signature data
+  """
+
+  sig_fmt = '<B4sL32s'
+  sig_fields = ('version', 'device_name', 'prog_date', 'prog_user')
+
+  def __init__(self, **kw):
+    self.version = kw['version']
+    if self.version is None:
+      self.device_name = None
+      self.prog_date = None
+      self.prog_user = None
+    else:
+      self.device_name = kw['device_name']
+      if len(self.device_name) > 4:
+        raise ValueError("invalid device name: %r" % self.device_name)
+      self.prog_date = int(kw['prog_date'])
+      self.prog_user = kw['prog_user']
+      if len(self.prog_user) > 32:
+        raise ValueError("user name too long: %r" % self.prog_user)
+
+  @classmethod
+  def default(cls, version=1, device_name=None, prog_date=None, prog_user=None):
+    """Create a new default signature"""
+    return cls(
+        version = 1,
+        device_name = "----" if device_name is None else device_name,
+        prog_date = int(time.time()) if prog_date is None else prog_date,
+        prog_user = getuser() if prog_user is None else prog_user,
+        )
+
+  def pack(self):
+    """Return a binary representation of the signature"""
+    return struct.pack(self.sig_fmt,
+        self.version, self.device_name, self.prog_date, self.prog_user)
+
+  @classmethod
+  def unpack(cls, data):
+    """Create a signature instance from binary data"""
+    version = ord(data[0])
+    fields = {}
+    if version in (0, 0xff):
+      fields['version'] = None
+    else:
+      values = struct.unpack(cls.sig_fmt, data[:struct.calcsize(cls.sig_fmt)])
+      fields.update(zip(cls.sig_fields, values))
+    return cls(**fields)
+
 
 
 class BaseClient(object):
@@ -229,6 +282,31 @@ class BaseClient(object):
     Return True on success, False on error and None on CRC mismatch.
     """
     r = self.send_cmd('p', 'IH%ds' % len(buf), addr, crc, buf)
+    if r.status == self.STATUS_CRC_MISMATCH:
+      return None
+    if not r:
+      return False
+    return True
+
+  def cmd_read_user_sig(self):
+    """Read user signature
+
+    Return user signature as a UserSig instance or False on error.
+    """
+    r = self.send_cmd('s')
+    if not r:
+      return False
+    return UserSig.unpack(r.data)
+
+  def cmd_prog_user_sig(self, sig):
+    """Program the user signature
+
+    sig can be a data buffer or a UserSig instance.
+    Return True on success, False on error and None on CRC mismatch.
+    """
+    if isinstance(sig, UserSig):
+      sig = sig.pack()
+    r = self.send_cmd('S', 'HB%ds' % len(sig), self.compute_crc(sig), len(sig), sig)
     if r.status == self.STATUS_CRC_MISMATCH:
       return None
     if not r:
@@ -424,12 +502,13 @@ class Client(BaseClient):
         break
 
 
-  def program(self, fhex, fhex2=None):
+  def program(self, fhex, fhex2=None, user_sig=None):
     """Send a program to the device
 
     Parameters:
       fhex -- HEX data to program
       fhex2 -- previous HEX data, to program changes
+      user_sig -- update the user signature
 
     See parse_hex() for accepted fhex/fhex2 values.
     See program_pages() for return values.
@@ -437,16 +516,17 @@ class Client(BaseClient):
     """
     pages = self.parse_hex(fhex)
     if fhex2 is None:
-      return self.program_pages(pages)
+      return self.program_pages(pages, user_sig=user_sig)
     pages2 = self.parse_hex(fhex2)
-    return self.program_pages(self.diff_pages(pages, pages2))
+    return self.program_pages(self.diff_pages(pages, pages2), user_sig=user_sig)
 
 
-  def program_pages(self, pages):
+  def program_pages(self, pages, user_sig=None):
     """Send a program to the device
 
     Parameters:
       pages -- a list of pages to program
+      user_sig -- update the user signature
 
     pages is a list of (address, data) pairs. address has to be aligned to
     pagesize, data is padded if needed but size must not exceed page size.
@@ -461,6 +541,24 @@ class Client(BaseClient):
       return None
 
     self.synchronize()
+
+    if user_sig is not None:
+      if isinstance(user_sig, UserSig):
+        user_sig = user_sig.pack()
+      n = self.CRC_RETRY
+      while True:
+        r = self.cmd_prog_user_sig(user_sig)
+        if r is True:
+          break # ok
+        elif r is False:
+          raise ClientError("user signature prog failed")
+        elif r is None:
+          if n == 0:
+            raise ClientError("user signature prog failed %s: too many attempts")
+          n = n-1
+          continue # retry
+        raise ValueError("unexpected cmd_prog_user_sig() return value: %r" % r)
+
     for i, (addr, data) in enumerate(pages):
       self.output_program_progress(i+1, page_count)
 
@@ -560,6 +658,14 @@ class Client(BaseClient):
       raise ClientError("failed to read fuses")
     return r
 
+  def read_user_sig(self):
+    """Read user signature, return a UserSig instance"""
+    self.synchronize()
+    r = self.cmd_read_user_sig()
+    if r is False:
+      raise ClientError("failed to read user signature")
+    return r
+
 
   def boot(self):
     """Boot the device"""
@@ -630,6 +736,14 @@ def main():
       help="boot (after programming and CRC check)")
   parser.add_argument('-f', '--read-fuses', action='store_true',
       help="print value of fuse bytes")
+  parser.add_argument('--read-user-sig', action='store_true',
+      help="print value of user signature")
+  parser.add_argument('--device-name',
+      help="device name, use in user signature, check before programming")
+  parser.add_argument('--keep-user-sig', action='store_true',
+      help="don't update user signature")
+  parser.add_argument('--force-device-name', action='store_true',
+      help="don't check device name")
   parser.add_argument('--init-send', dest='init_send',
       help="string to send at connection (eg. to reset the device)")
   parser.add_argument('-v', '--verbose', action='store_true',
@@ -676,12 +790,21 @@ def main():
   client.synchronize()
   client.update_infos()
 
+  if not args.force_device_name and args.device_name is not None:
+    sig = client.read_user_sig()
+    if sig.device_name is not None and sig.device_name != args.device_name:
+      print "device name mismatch: got %r, expected %r" % (sig.device_name, args.device_name)
+      return
   if args.read_fuses:
     fuses = client.read_fuses()
     print ("fuses:"+' %02x'*len(fuses)) % fuses
   if args.program:
     print "programming..."
-    ret = client.program(args.hex, args.previous)
+    if args.keep_user_sig:
+      sig = None
+    else:
+      sig = UserSig.default(device_name=args.device_name)
+    ret = client.program(args.hex, args.previous, user_sig=sig)
     if ret is None:
       print "nothing to program"
   if args.check:
@@ -691,6 +814,15 @@ def main():
     else:
       print "CRC mismatch"
       args.boot = False
+  if args.read_user_sig:
+    sig = client.read_user_sig()
+    if sig.version is None:
+      print "user signature: no data"
+    else:
+      print "user signature (version %d)" % sig.version
+      print "  device name: %s" % sig.device_name
+      print "  prog date: %s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(sig.prog_date))
+      print "  prog user: %s" % sig.prog_user
   if args.boot:
     print "boot"
     client.boot()
