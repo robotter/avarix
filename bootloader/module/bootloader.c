@@ -390,7 +390,7 @@ static void cmd_execute(void)
 
 /** @brief Program a page
  *
- * When using CRC check, the page is not written on mismatch.
+ * The page is not written on CRC mismatch.
  *
  * Parameters:
  *  - page address (u32), must be aligned
