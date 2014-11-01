@@ -223,7 +223,7 @@ class BaseClient(object):
       return False
     return r.unpack('%dB' % len(r.data))
 
-  def cmd_prog_page(self, addr, buf, crc=0):
+  def cmd_prog_page(self, addr, buf, crc):
     """Program a page
 
     Return True on success, False on error and None on CRC mismatch.
