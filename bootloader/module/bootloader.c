@@ -102,8 +102,9 @@ static uint8_t boot_lock_fuse_bits_get(uint8_t offset)
 }
 
 
+//XXX wdt_disable() is provided by avr-libc but fails in 1.8.1
 /// Disable watchdog
-static void wdt_disable(void)
+static void wdt_disable_(void)
 {
   ccp_io_write(&WDT.CTRL, (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm);
 }
@@ -486,7 +487,7 @@ int main(void)
 {
   // switch vector table (interrupts are not used anyway)
   ccp_io_write(&PMIC.CTRL, PMIC.CTRL | PMIC_IVSEL_bm);
-  wdt_disable();
+  wdt_disable_();
 
   clock_init();
 
