@@ -58,7 +58,7 @@ static void boot_flash_page_fill(uint32_t address, uint16_t word)
     , [addr32] "r" ((uint32_t)(address))
     , [rampz]  "i" (_SFR_MEM_ADDR(RAMPZ))
     , [word]   "r" ((uint16_t)(word))
-    : "r0"
+    : "r0", "r1"
   );
 }
 
@@ -71,7 +71,6 @@ static void boot_app_page_erase_write(uint32_t address)
     "sts %[nvmcmd], %[cmdval]\n"  // set NVM.CMD for load command
     "sts %[ccp], %[ccpspm]\n"     // disable CCP protection
     "spm\n"                       // execute SPM operation
-    "clr r1\n"                    // clear r1, GCC's __zero_reg__
     "sts %[nvmcmd], %[cmdnop]\n"  // clear NVM.CMD
     :
     : [nvmcmd] "i" (_SFR_MEM_ADDR(NVM_CMD))
