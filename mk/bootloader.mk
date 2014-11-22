@@ -51,6 +51,12 @@ prog-bootloader-fuse:
 	[ $$(( b & (1<<$(bootrst_bit)) )) = 0 ] || \
 		$(AVRDUDE_CMD) -U $(bootrst_fusebyte):w:$$(( b & ~(1<<$(bootrst_bit)) )):m
 
+clear-bootloader-fuse:
+	b=$$($(AVRDUDE_CMD) -qq -U $(bootrst_fusebyte):r:-:d) ; \
+	[ $$(( b & (1<<$(bootrst_bit)) )) = 0 ] || \
+		$(AVRDUDE_CMD) -U $(bootrst_fusebyte):w:$$(( b | (1<<$(bootrst_bit)) )):m
+
+
 
 # Cleaning
 
