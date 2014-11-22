@@ -49,7 +49,7 @@ typedef struct {
 
 
 /// Read the whole user signature
-void user_sig_read(user_sig_t *sig)
+static inline void user_sig_read(user_sig_t *sig)
 {
   register uint8_t cnt;
   asm volatile (
