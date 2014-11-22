@@ -53,17 +53,16 @@ static inline void user_sig_read(user_sig_t *sig)
 {
   register uint8_t cnt;
   asm volatile (
-    "ldi %[cnt], %[size]\n"       // initialize data (down)counter
     "sts %[nvmcmd], %[cmdval]\n"  // set NVM.CMD for load command
-    "loop:\n"                    
+    "1:\n"
     "lpm r0, Z+\n"                // execute SPM operation
-    "st Y+, r0\n"                 // write data to dest, increment dest
+    "st X+, r0\n"                 // write data to dest, increment dest
     "dec %[cnt]\n"                // update counter
-    "brne loop\n"
+    "brne 1b\n"
     "sts %[nvmcmd], %[cmdnop]\n"  // clear NVM.CMD
     : [cnt]    "=r" (cnt)
-    : [dest]   "y" (sig)
-    , [size]   "M" (sizeof(*sig))
+    :          "[cnt]" ((uint8_t)sizeof(*sig))
+    ,          "x" (sig)
     , [nvmcmd] "i" (_SFR_MEM_ADDR(NVM_CMD))
     , [cmdval] "r" ((uint8_t)(NVM_CMD_READ_USER_SIG_ROW_gc))
     , [cmdnop] "r" ((uint8_t)(NVM_CMD_NO_OPERATION_gc))
