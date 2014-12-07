@@ -15,14 +15,20 @@ class CodeGenerator:
     self.messages = sorted(rome.messages.values(), key=lambda m: m.mid)
 
   @classmethod
-  def c_typename(cls, typ):
-    """Return C typename of a ROME type"""
+  def c_typedecl(cls, typ, name):
+    """Return C type declaration of a ROME type"""
     if issubclass(typ, rome.types.rome_int):
       u = 'u' if not typ.signed else ''
       n = typ.packsize * 8
-      return '%sint%d_t' % (u, n)
+      return '%sint%d_t %s' % (u, n, name)
     elif issubclass(typ, rome.types.rome_float):
-      return 'float'
+      return 'float %s' % name
+    elif issubclass(typ, rome.types.ArrayType):
+      return '%s[%d]' % (cls.c_typedecl(typ.base, name), typ.array_size)
+    elif issubclass(typ, rome.types.VarArrayType):
+      return '%s[0]' % cls.c_typedecl(typ.base, name)
+    elif issubclass(typ, rome.types.rome_string):
+      return 'char %s[0]' % name
     else:
       raise TypeError("unsupported type: %s" % typ)
 
@@ -38,7 +44,7 @@ class CodeGenerator:
   def msgdata_union_fields(self):
     ret = ''
     for msg in self.messages:
-      fields = [ '%s %s;' % (self.c_typename(t), v) for v,t in msg.ptypes ]
+      fields = [ self.c_typedecl(t, v) + ';' for v,t in msg.ptypes ]
       if isinstance(msg, rome.frame.Order):
         fields.insert(0, 'uint8_t _ack;')
       ret += '\n    struct {\n%s    } %s;\n' % (
@@ -48,7 +54,9 @@ class CodeGenerator:
     return ret
 
   def max_param_size(self):
-    return max(msg.plsize for msg in self.messages)
+    # always use the maximum value
+    # the log message will always "force" this
+    return 255
 
   @classmethod
   def msg_macro_helper(cls, msg):
@@ -109,7 +117,8 @@ class CodeGenerator:
   def macro_helpers(self):
     ret = ''
     for msg in self.messages:
-      ret += self.msg_macro_helper(msg)
+      if not msg.varsize:
+        ret += self.msg_macro_helper(msg)
     return ret
 
   @classmethod
@@ -123,7 +132,8 @@ class CodeGenerator:
   def macro_disablers(self):
     ret = ''
     for msg in self.messages:
-      ret += self.msg_macro_disabler(msg)
+      if not msg.varsize:
+        ret += self.msg_macro_disabler(msg)
     return ret
 
 
