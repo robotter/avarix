@@ -17,7 +17,9 @@ class CodeGenerator:
   @classmethod
   def c_typedecl(cls, typ, name):
     """Return C type declaration of a ROME type"""
-    if issubclass(typ, rome.types.rome_int):
+    if issubclass(typ, rome.types.EnumType):
+      return 'rome_enum_%s_t %s' % (typ.name, name)
+    elif issubclass(typ, rome.types.rome_int):
       u = 'u' if not typ.signed else ''
       n = typ.packsize * 8
       return '%sint%d_t %s' % (u, n, name)
@@ -40,6 +42,24 @@ class CodeGenerator:
     return ''.join(
         '  %s = 0x%02X,\n' % (self.mid_enum_name(msg), msg.mid)
         for msg in self.messages)
+
+  @classmethod
+  def type_enum_name(cls, msg, key):
+    return 'ROME_ENUM_%s_%s' % (msg.name.upper(), key.upper())
+
+  def enum_types(self):
+    # gather enum types from all messages
+    enums = ( t
+        for msg in self.messages
+        for v,t in msg.ptypes
+        if issubclass(t, rome.types.EnumType) )
+    ret = ''
+    for enum in enums:
+      values = ''.join( '  %s = %d,\n' % (self.type_enum_name(enum, k), v)
+          for k,v in enum.values.items() )
+      ret += "typedef enum {\n%s} rome_enum_%s_t;\n\n" % (values, enum.name)
+    return ret
+
 
   def msgdata_union_fields(self):
     ret = ''

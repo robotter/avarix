@@ -6,7 +6,8 @@
  *
  * @note
  * This file is generated.
- * Generated symbols for a \e dummy message and a \e fake order are provided.
+ * Generated symbols for a \e dummy message, a \e fake order and a \e switch
+ * enum are provided.
  */
 #ifndef ROME_MSG_H__
 #define ROME_MSG_H__
@@ -38,6 +39,11 @@ typedef enum {
   ROME_MID_FAKE = 0x43,
 } rome_mid_t;
 
+typedef enum {
+  ROME_ENUM_SWITCH_OFF = 0,
+  ROME_ENUM_SWITCH_ON = 1,
+} rome_enum_switch_t;
+
 /// ROME frame
 typedef struct {
   uint8_t plsize;  ///< length of payload data
@@ -46,7 +52,7 @@ typedef struct {
     uint8_t _data[3];
     /// Data of dummy message
     struct {
-      uint8_t a;
+      rome_enum_switch_t a;
       int16_t b;
     } dummy;
     /// Data of fake order
@@ -62,6 +68,8 @@ typedef struct {
 typedef enum {
 #pragma avarix_tpl self.mid_enum_fields()
 } __attribute__((__packed__)) rome_mid_t;
+
+#pragma avarix_tpl self.enum_types()
 
 typedef struct {
   uint8_t plsize;
