@@ -30,4 +30,14 @@ static inline void ccp_io_write(volatile uint8_t* addr, uint8_t value)
 }
 
 
+/// Trigger a software reset, and wait
+static inline void software_reset(void) __attribute__ ((noreturn));
+void software_reset(void)
+{
+  CCP = CCP_IOREG_gc;
+  RST.CTRL |= RST_SWRST_bm;
+  for(;;);
+}
+
+
 #endif
