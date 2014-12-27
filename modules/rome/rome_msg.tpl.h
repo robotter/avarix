@@ -128,9 +128,9 @@ typedef struct {
    (sizeof((rome_frame_t*)0)->_data - (size_t)&((rome_frame_t*)0)->_msg._field)
 
 #define ROME_LOG(_i, _sev, _msg) do { \
-  uint8_t _buf[2 + sizeof(_msg)-1]; \
+  uint8_t _buf[2 + 1 + sizeof(_msg)-1]; \
   rome_frame_t *_frame = (rome_frame_t*)_buf; \
-  _frame->plsize = sizeof(_msg)-1; \
+  _frame->plsize = 1 + sizeof(_msg)-1; \
   _frame->mid = ROME_MID_LOG; \
   _frame->log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
   memcpy(_frame->log.msg, _msg, sizeof(_msg)-1); \
@@ -141,7 +141,7 @@ typedef struct {
 #define ROME_LOGF(_i, _sev, _fmt, ...) do { \
   rome_frame_t _frame; \
   int n = snprintf(_frame.log.msg, ROME_MAX_FIELD_SIZE(log, msg)-1, _fmt, ##__VA_ARGS__); \
-  _frame.plsize = n <= (int)ROME_MAX_FIELD_SIZE(log, msg) ? n : (int)ROME_MAX_FIELD_SIZE(log, msg); \
+  _frame.plsize = 1 + (n <= (int)ROME_MAX_FIELD_SIZE(log, msg) ? n : (int)ROME_MAX_FIELD_SIZE(log, msg)); \
   _frame.mid = ROME_MID_LOG; \
   _frame.log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
   rome_send((_i), &_frame); \
