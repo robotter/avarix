@@ -113,8 +113,9 @@ ifeq ($(HOST),avr)
 
 CPPFLAGS += -mmcu=$(MCU)
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -fdata-sections -ffunction-sections
 ASFLAGS += -Wa,-gstabs
-LDFLAGS += -mmcu=$(MCU)
+LDFLAGS += -mmcu=$(MCU) -Wl,--gc-sections
 
 printf_LDFLAGS_minimal := -Wl,-u,vfprintf -lprintf_min
 printf_LDFLAGS_standard :=
