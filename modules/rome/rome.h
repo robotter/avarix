@@ -39,6 +39,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <avarix/internal.h>
 #include <uart/uart.h>
 #include "rome_config.h"
 #include "rome/rome_msg.h"
