@@ -23,8 +23,6 @@
 
 /// Code to execute when the bootloader starts
 #define BOOTLOADER_INIT_CODE
-/// Code to execute when entering bootloader command processing
-#define BOOTLOADER_ENTER_CODE
 /// Code to execute before running the application
 #define BOOTLOADER_BOOT_CODE
 
