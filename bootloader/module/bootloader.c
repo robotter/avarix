@@ -15,6 +15,8 @@
  *  @brief Bootloader code
  */
 #include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/pgmspace.h>
@@ -158,6 +160,7 @@ static void run_app(void)
     "ldi r31, 0\n"
     "ijmp\n"
   );
+  __builtin_unreachable();
 }
 
 
@@ -240,17 +243,6 @@ static void uart_send(char c)
   BOOTLOADER_UART.DATA = c;
 }
 
-static char uart_recv(void)
-{
-  while(!(BOOTLOADER_UART.STATUS & USART_RXCIF_bm)) ;
-  return BOOTLOADER_UART.DATA;
-}
-
-static bool uart_poll(void)
-{
-  return BOOTLOADER_UART.STATUS & USART_RXCIF_bm;
-}
-
 //@}
 
 
@@ -258,101 +250,85 @@ static bool uart_poll(void)
  */
 //@{
 
-#define STATUS_NONE             0x00
-#define STATUS_SUCCESS          0x01
-#define STATUS_BOOTLOADER_MSG   0x0a // LF
-#define STATUS_FAILURE          0xff
-#define STATUS_UNKNOWN_COMMAND  0x81
-#define STATUS_BAD_VALUE        0x82
-#define STATUS_CRC_MISMATCH     0x90
+#define ROME_START_BYTE  0x52 // 'R'
+#define ROME_MID_BOOTLODADER    0x03
+#define ROME_MID_BOOTLODADER_R  0x04
+
+typedef enum {
+  CMD_NONE = 0,
+  CMD_BUFFER,
+  CMD_BOOT,
+  CMD_INFO,
+  CMD_R_INFO,
+  CMD_PROG_PAGE,
+  CMD_R_PROG_PAGE,
+  CMD_MEM_CRC,
+  CMD_R_MEM_CRC,
+  CMD_FUSE_READ,
+  CMD_R_FUSE_READ,
+  CMD_READ_USER_SIG,
+  CMD_R_READ_USER_SIG,
+  CMD_PROG_USER_SIG,
+  CMD_R_PROG_USER_SIG,
+} cmd_t;
+
+typedef enum {
+  STATUS_SUCCESS = 0,
+  STATUS_ERROR,
+  STATUS_UNKNOWN_CMD,
+  STATUS_BAD_VALUE,
+  STATUS_CRC_MISMATCH,
+  STATUS_UNEXPECTED_CMD,
+} status_t;
 
 
-static void send_u8(uint8_t v)
-{
-  uart_send(v);
-}
+/// Bootloader message frame (ROME frame payload)
+typedef struct {
+  uint8_t ack;
+  uint8_t cmd;
+  uint8_t data[255-2];
+} frame_t;
 
-static void send_buf(const uint8_t *buf, uint8_t n)
-{
-  while(n--) {
-    send_u8(*buf++);
-  }
-}
 
-static void send_u16(uint16_t v)
-{
-  send_u8(v & 0xff);
-  send_u8((v >> 8) & 0xff);
-}
-
-/// Send a NUL terminated string (without the NUL character)
-static void send_str(const char *s)
-{
-  while(*s) {
-    send_u8(*s++);
-  }
-}
-
-static uint8_t recv_u8(void)
-{
-  return uart_recv();
-}
-
-/** @brief Send a human-readable reply
+/** @brief Send a ROME bootloader reply frame
  *
- * This method is intended for messages sent by the bootloader which may not be
- * handled by a client (eg. enter/exit messages).
- *
- * \e msg must be 10 character long.
- * The resulting message will be \e msg surrounded by CRLF sequences, and still
- * be a valid protocol reply.
+ * \e size is the size of the bootloader frame data.
  */
-#define SEND_MESSAGE(msg) send_str("\r\n" msg "\r\n")
-
-static uint16_t recv_u16(void)
+static void send_rome_reply(uint8_t ack, uint8_t status, uint8_t *data, uint8_t size)
 {
-  uint8_t b[2];
-  b[0] = recv_u8();
-  b[1] = recv_u8();
-  return b[0] + (b[1] << 8);
+  uint16_t crc = 0xffff;
+
+  // start byte, mid, payload size
+  uart_send(ROME_START_BYTE);
+  uint8_t plsize = size + 2;
+  uart_send(plsize);
+  crc = _crc_ccitt_update(crc, plsize);
+  uart_send(ROME_MID_BOOTLODADER_R);
+  crc = _crc_ccitt_update(crc, ROME_MID_BOOTLODADER_R);
+
+  // frame data (ROME payload)
+  uart_send(ack);
+  crc = _crc_ccitt_update(crc, ack);
+  uart_send(status);
+  crc = _crc_ccitt_update(crc, status);
+  for(uint8_t i=0; i<size; ++i) {
+    uart_send(data[i]);
+    crc = _crc_ccitt_update(crc, data[i]);
+  }
+
+  // CRC
+  uart_send(crc & 0xff);
+  uart_send((crc >> 8) & 0xff);
 }
 
-static uint32_t recv_u32(void)
-{
-  uint16_t w[2];
-  w[0] = recv_u16();
-  w[1] = recv_u16();
-  uint32_t ret = w[0];
-  ret += w[1] * 0x10000U;
-  return ret;
-}
-
-
-/// Send a reply with given status and field size
-static void reply(uint8_t st, uint8_t size)
-{
-  send_u8(size + 1);
-  send_u8(st);
-}
-
-/// Prepare a success reply with a given field size
-static void reply_success(uint8_t size)
-{
-  reply(STATUS_SUCCESS, size);
-}
-
-/// Send a failure reply with no fields
-static void reply_failure(void)
-{
-  reply(STATUS_FAILURE, 0);
-}
-
-/// Send a custom error reply with no fields
-static void reply_error(uint8_t st)
-{
-  reply(st, 0);
-}
-
+/// Send a status reply with no data
+#define reply_status(frame, status)  send_rome_reply((frame)->ack, STATUS_##status, 0, 0)
+/// Send a success reply with no data
+#define reply_success(frame)  send_rome_reply((frame)->ack, STATUS_SUCCESS, 0, 0)
+/// Send a success reply with data
+#define reply_data(frame, data, size)  send_rome_reply((frame)->ack, STATUS_SUCCESS, (data), (size))
+/// Send a success reply with no data
+#define reply_success(frame)  send_rome_reply((frame)->ack, STATUS_SUCCESS, 0, 0)
 //@}
 
 
@@ -369,58 +345,155 @@ static void boot(void)
   do{ BOOTLOADER_BOOT_CODE }while(0);
 #endif
   run_app();
+  __builtin_unreachable();
 }
 
 
-/** @name Protocol commands
- *
- * Commands format is:
- *  - a command (u8)
- *  - parameters
- *
- * Reply format is:
- *  - reply size (u8), not counting the size byte itself
- *  - a status code (u8)
- *  - reply fields
- *
- * @note The reply size is never 0 since it includes at least the status code.
- *
- * All values are coded in little-endian.
+/// Receive on UART while waiting for timeout
+static char uart_timeout(uint32_t *timeout)
+{
+  // always decrease timeout, to timeout even when flooded
+  while((*timeout)-- != 0) {
+    if(BOOTLOADER_UART.STATUS & USART_RXCIF_bm) {
+      return BOOTLOADER_UART.DATA;
+    }
+  }
+  boot();
+  __builtin_unreachable();
+}
+
+
+/** @brief Receive a ROME frame
+ */
+void recv_frame(frame_t *frame)
+{
+  // Read timeout before booting (approximate)
+  static const uint32_t timeout0 = (uint32_t)(BOOTLOADER_TIMEOUT) * (float)CLOCK_CPU_FREQ/(32.*1000);
+  uint32_t timeout = timeout0;
+  for(;;) {
+    // start byte
+    while(uart_timeout(&timeout) != ROME_START_BYTE) ;
+
+    uint16_t crc = 0xffff;
+
+    // payload size, message ID
+    uint8_t plsize = uart_timeout(&timeout);
+    uint8_t mid = uart_timeout(&timeout);
+    crc = _crc_ccitt_update(crc, plsize);
+    crc = _crc_ccitt_update(crc, mid);
+
+    // not a bootloader frame, or invalid payload (too small)
+    if(mid != ROME_MID_BOOTLODADER || plsize < offsetof(frame_t, data)) {
+      // consume payload but don't process
+      for(uint8_t i=0; i<plsize; i++) {
+        uart_timeout(&timeout);
+      }
+      continue;
+    }
+
+    // payload data
+    uint8_t *buf = (uint8_t*)frame;
+    for(uint8_t i=0; i<plsize; ++i) {
+      char c = buf[i] = uart_timeout(&timeout);
+      crc = _crc_ccitt_update(crc, c);
+    }
+
+    // CRC
+    crc ^= uart_timeout(&timeout);
+    crc ^= uart_timeout(&timeout) << 8;
+    if(crc != 0) {
+      continue;
+    }
+
+    // frame is valid
+    return;
+  }
+}
+
+
+/** @name Bootloader commands
  */
 //@{
 
-/** @brief Dump general infos
+
+/** @brief Fill the page buffer from buffer commands
  *
- * Reply fields:
- *  - PROGMEM_PAGE_SIZE value (u16)
+ * The client sends the buffer split into several chunks.
+ * Each chunk is identified by an offset and a size.
+ * When the buffer has been fully received, the client sends a buffer
+ * command with size set to 0.
+ * Offset and size MUST be multiples of 2 (word size).
+ *
+ * Return true on success, false on error.
+ *
+ * On success, the ack for reply is written in reply_ack.
+ * The reply to the last empty buffer must is NOT sent on success. This allows
+ * the caller to reply with an error status code if further operations fail.
+ *
+ * Command data:
+ *  - offset (uint16)
+ *  - size (uint8)
+ *  - data (size given in parameters)
  */
-static void cmd_infos(void)
+static bool recv_page_buffer(uint32_t addr, uint8_t *reply_ack)
 {
-  static const uint8_t infos_buf[] = {
-    PROGMEM_PAGE_SIZE & 0xff, (PROGMEM_PAGE_SIZE >> 8) & 0xff,
-  };
-  reply_success(sizeof(infos_buf));
-  send_buf(infos_buf, sizeof(infos_buf));
+  frame_t frame;
+  for(;;) {
+    recv_frame(&frame);
+    if(frame.cmd != CMD_BUFFER) {
+      reply_status(&frame, UNEXPECTED_CMD);
+      return false;
+    }
+
+    struct {
+      uint16_t offset;
+      uint8_t size;
+      uint16_t data0;
+    } *data = (void*)frame.data;
+    uint16_t offset = data->offset;
+    uint8_t size = data->size;
+
+    if(size == 0) {
+      *reply_ack = frame.ack;
+      return true;
+    } else if(offset % 2 != 0 || size % 2 != 0 || offset + size > PROGMEM_PAGE_SIZE) {
+      reply_status(&frame, BAD_VALUE);
+      return false;
+    }
+
+    uint32_t waddr = addr + offset;
+    uint16_t *page_data = &data->data0;
+    do {
+      boot_flash_page_fill(waddr, *page_data);
+      waddr += 2;
+      ++page_data;
+    } while(size -= 2);
+
+    reply_success(&frame);
+  }
 }
 
-
-/** @brief Read a byte and send it back
- */
-static void cmd_mirror(void)
-{
-  const uint8_t c = recv_u8();
-  reply_success(1);
-  send_u8(c);
-}
 
 /** @brief Terminate the connection and run the application
  *
  * The server replies to acknowledge, then resets.
  */
-static void cmd_execute(void)
+static void cmd_boot(const frame_t *frame)
 {
-  reply_success(0);
+  reply_success(frame);
   boot();
+}
+
+
+/** @brief Dump general info
+ *
+ * Reply data:
+ *  - PROGMEM_PAGE_SIZE (uint16)
+ */
+static void cmd_info(const frame_t *frame)
+{
+  uint16_t data = PROGMEM_PAGE_SIZE;
+  reply_data(frame, (void*)&data, sizeof(data));
 }
 
 
@@ -428,44 +501,31 @@ static void cmd_execute(void)
  *
  * The page is not written on CRC mismatch.
  *
- * Parameters:
- *  - page address (u32), must be aligned
- *  - CRC (u16)
- *  - page data
+ * Command data:
+ *  - page address (uint32), must be aligned
+ *
+ * Read page buffer data.
  */
-static void cmd_prog_page(void)
+static void cmd_prog_page(frame_t *frame)
 {
-  const uint32_t addr = recv_u32();
+  struct {
+    uint32_t addr;
+  } *data = (void*)frame->data;
+  uint32_t addr = data->addr;
+
   // addr must be aligned on page size, and be in the bootloader area
   if(addr > APP_SECTION_END || addr % PROGMEM_PAGE_SIZE != 0) {
-    reply_error(STATUS_BAD_VALUE);
-    return;
+    return reply_status(frame, BAD_VALUE);
   }
 
-  const uint16_t crc_expected = recv_u16();
-  uint16_t crc = 0xffff;
-
-  // Read data, fill temporary page buffer, compute CRC
-  for(uint16_t i=0; i<PROGMEM_PAGE_SIZE/2; i++) {
-    uint8_t c1 = recv_u8();
-    uint8_t c2 = recv_u8();
-    crc = _crc_ccitt_update(crc, c1);
-    crc = _crc_ccitt_update(crc, c2);
-    uint16_t w = c1 + (c2 << 8); // little endian word
-    boot_flash_page_fill(addr+2*i, w);
-  }
-
-  // check CRC
-  if(crc != crc_expected) {
-    reply_error(STATUS_CRC_MISMATCH);
-    return;
-  }
-
+  reply_success(frame);
+  // Fill temporary page buffer
+  recv_page_buffer(addr, &frame->ack);
   // Erase and write the page
   boot_app_page_erase_write(addr);
   boot_nvm_busy_wait();
 
-  reply_success(0);
+  reply_success(frame);
 }
 
 
@@ -474,20 +534,24 @@ static void cmd_prog_page(void)
  * The client asks for a CRC, providing an address and a size, and the server
  * replies with the computed CRC.
  *
- * Parameters:
- *  - start address (u32)
- *  - size (u32)
+ * Command data:
+ *  - start address (uint32)
+ *  - size (uint32)
  *
- * Reply: computed CRC (u16)
+ * Reply data:
+ *  - computed CRC (uint16)
  */
-static void cmd_mem_crc(void)
+static void cmd_mem_crc(const frame_t *frame)
 {
-  const uint32_t start = recv_u32();
-  const uint32_t size = recv_u32();
+  struct {
+    uint32_t start;
+    uint32_t size;
+  } *data = (void*)frame->data;
+  uint32_t start = data->start;
+  uint32_t size = data->size;
 
   if(start + size > APP_SECTION_END+1) {
-    reply_error(STATUS_BAD_VALUE);
-    return;
+    return reply_status(frame, BAD_VALUE);
   }
 
   // Compute CRC
@@ -497,22 +561,21 @@ static void cmd_mem_crc(void)
     crc = _crc_ccitt_update(crc, c);
   }
 
-  reply_success(2);
-  send_u16(crc);
+  reply_data(frame, (void*)&crc, sizeof(crc));
 }
 
 
 /** @brief Read the user signature
  *
- * Reply fields: data (variable size)
+ * Reply data:
+ *  - signature data (variable size)
  */
-static void cmd_read_user_sig(void)
+static void cmd_read_user_sig(const frame_t *frame)
 {
   user_sig_t sig;
   user_sig_read(&sig);
 
-  reply_success(sizeof(sig));
-  send_buf((void*)&sig, sizeof(sig));
+  reply_data(frame, (void*)&sig, sizeof(sig));
 }
 
 
@@ -520,39 +583,12 @@ static void cmd_read_user_sig(void)
  *
  * The page is not written on CRC mismatch.
  *
- * Parameters:
- *  - CRC (u16)
- *  - data size (u8)
- *  - data
+ * Read page buffer data.
  */
-static void cmd_prog_user_sig(void)
+static void cmd_prog_user_sig(frame_t *frame)
 {
-  const uint16_t crc_expected = recv_u16();
-  uint16_t crc = 0xffff;
-
-  // Read data, fill temporary page buffer, compute CRC
-  const uint8_t size = recv_u8();
-  for(uint8_t i=0; i<size; i++) {
-    uint8_t c1 = recv_u8();
-    crc = _crc_ccitt_update(crc, c1);
-    i++;
-    uint8_t c2;
-    if(i < size) {
-      c2 = recv_u8();
-      crc = _crc_ccitt_update(crc, c2);
-    } else {
-      c2 = 0;
-    }
-    uint16_t w = c1 + (c2 << 8); // little endian word
-    // note: this sets RAMPZ even if it's not necessary
-    boot_flash_page_fill(i, w);
-  }
-
-  // check CRC
-  if(crc != crc_expected) {
-    reply_error(STATUS_CRC_MISMATCH);
-    return;
-  }
+  reply_success(frame);
+  recv_page_buffer(0, &frame->ack);
 
   // Erase and write the page
   boot_user_sig_erase();
@@ -560,24 +596,26 @@ static void cmd_prog_user_sig(void)
   boot_user_sig_write();
   boot_nvm_busy_wait();
 
-  reply_success(0);
+  reply_success(frame);
 }
 
 
 /** @brief Dump fuse values
  *
- * Reply fields: fuses as u8s (6 bytes).
+ * Reply data:
+ *  - fuses (uint8 array, 6 bytes)
  */
-static void cmd_fuse_read(void)
+static void cmd_fuse_read(const frame_t *frame)
 {
-  reply_success(3);
+  uint8_t data[FUSE_SIZE];
   for(uint8_t i=0; i<FUSE_SIZE; i++) {
-    send_u8(boot_lock_fuse_bits_get(i));
+    data[i] = boot_lock_fuse_bits_get(i);
   }
+  reply_data(frame, data, sizeof(data));
 }
 
-//@}
 
+//@}
 
 
 int main(void) __attribute__ ((OS_main));
@@ -595,44 +633,25 @@ int main(void)
 
   uart_init();
 
-  SEND_MESSAGE("boot enter");
-  // timeout before booting
-  uint8_t i = (uint32_t)(BOOTLOADER_TIMEOUT) * (float)CLOCK_CPU_FREQ/(65536*4*1000);
-  for(;;) {
-    // detect activity from client
-    if(uart_poll()) {
-      break;
-    }
-
-    if(i == 0) {
-      boot(); // timeout
-    }
-    i--;
-    _delay_loop_2(0); // 65536*4 cycles
+  // send a log message to signal we enter bootloader (precomputed)
+  // retrieved with: rome.Frame('log', 'info', 'enter bootloader').data()
+  static const char start_log[] = "R\x11\x02\1enter bootloader\xcd\xa0";
+  for(uint8_t ii=0; ii<sizeof(start_log)-1; ii++) {
+    uart_send(start_log[ii]);
   }
 
-#ifdef BOOTLOADER_ENTER_CODE
-  do{ BOOTLOADER_ENTER_CODE }while(0);
-#endif
-
+  frame_t frame;
   for(;;) {
-    const uint8_t c = recv_u8();
-    if(c == 0x00) {
-      continue; // null command: ignore
-    } else if(c == 0xff) {
-      // failure command
-      reply_failure();
-    }
-    else if(c == 'i') cmd_infos();
-    else if(c == 'm') cmd_mirror();
-    else if(c == 'x') cmd_execute();
-    else if(c == 'p') cmd_prog_page();
-    else if(c == 'c') cmd_mem_crc();
-    else if(c == 'f') cmd_fuse_read();
-    else if(c == 's') cmd_read_user_sig();
-    else if(c == 'S') cmd_prog_user_sig();
-    else {
-      reply_error(STATUS_UNKNOWN_COMMAND);
+    recv_frame(&frame);
+    switch(frame.cmd) {
+      case CMD_BOOT: cmd_boot(&frame); break;
+      case CMD_INFO: cmd_info(&frame); break;
+      case CMD_PROG_PAGE: cmd_prog_page(&frame); break;
+      case CMD_MEM_CRC: cmd_mem_crc(&frame); break;
+      case CMD_FUSE_READ: cmd_fuse_read(&frame); break;
+      case CMD_READ_USER_SIG: cmd_read_user_sig(&frame); break;
+      case CMD_PROG_USER_SIG: cmd_prog_user_sig(&frame); break;
+      default: break;
     }
   }
 }
