@@ -4,9 +4,11 @@ import re
 import sys
 import struct
 import time
+import threading
 from serial import Serial
 from contextlib import contextmanager
 from getpass import getuser
+import rome
 
 
 def load_hex(f):
@@ -104,10 +106,6 @@ def split_hex_chunks(chunks, size, fill):
   return ret
 
 
-class TimeoutError(RuntimeError):
-  pass
-
-
 class UserSig:
   """
   User signature data
@@ -159,144 +157,114 @@ class UserSig:
     return cls(**fields)
 
 
-
-class BaseClient(object):
+class BaseClient(rome.Client):
   """
-  Low-level Client for the Rob'Otter Bootloader
+  Base class for bootloader client
+
+  Attributes:
+    cur_order -- current order waiting for a reply, or None
+    cur_reply -- reply to current order
+    cur_reply_ev -- Event to wait for current reply
+
   """
 
-  STATUS_NONE             = 0x00
-  STATUS_SUCCESS          = 0x01
-  STATUS_BOOTLOADER_MSG   = 0x0a
-  STATUS_FAILURE          = 0xff
-  STATUS_UNKNOWN_COMMAND  = 0x81
-  STATUS_BAD_VALUE        = 0x82
-  STATUS_CRC_MISMATCH     = 0x90
+  msg_bootloader = rome.frame.messages_by_name['bootloader']
+  msg_bootloader_r = rome.frame.messages_by_name['bootloader_r']
+
+  def __init__(self, fo):
+    rome.Client.__init__(self, fo)
+    self.cur_order = None
+    self.cur_reply = None
+    self.cur_reply_ev = threading.Event()
+    # use default values more suitable to bootloader
+    # (programming page takes time)
+    self.retry_count = 5
+    self.retry_period = 0.4
+
+  def on_frame(self, frame):
+    self.output_recv_frame(frame)
+    if self.cur_order is None:
+      return  # no current order, nothing to process
+    if getattr(frame, 'ack', None) != self.cur_order.ack:
+      return  # not a reply to the current order
+    if frame.msg is not self.msg_bootloader_r:
+      return  # should not happen (sanity check)
+    #TODO check that reply command matches order command
+    self.cur_reply = frame
+    self.cur_reply_ev.set()
+
+  def on_sent_frame(self, frame):
+    self.output_send_frame(frame)
 
 
-  def __init__(self, conn):
-    """Initialize the client
-
-    conn is an UART connection object with the following requirements:
-     - should not be non-blocking (it may block only for a given period)
-     - write() and read(1) must be implemented
-
-    Note: methods assume that their are no pending data in the input queue
-    before sending a command. Otherwise, read responses will not match.
-
+  def send_cmd(self, cmd, data='', xdata=None):
+    """Send a command, wait for reply frame
+    Return the reply frame or None on timeout.
     """
-    self.conn = conn
-    self.__tend = None
+
+    if self.cur_order is not None:
+      raise RuntimeError("simultaneous bootloader orders")
+    # Since we sometimes have to send additional raw data,
+    # ClientResultHandler cannot be used.
+    # Instead, send the order frame then raw data, and wait for the reply, as
+    # done in rome.Client.
+    self.cur_reply_ev.clear()
+    try:
+      self.cur_order = rome.Frame(self.msg_bootloader, cmd, data)
+      for i in range(self.retry_count):
+        self.send(self.cur_order)
+        if xdata is not None:
+          self.send_raw(xdata)
+        if self.cur_reply_ev.wait(self.retry_period):
+          #TODO finer error status processing
+          return self.cur_reply
+      return None
+    finally:
+      self.cur_order = self.cur_reply = None
 
 
-  # Data transmission
+  def cmd_info(self):
+    """Retrieve server information
 
-  def send_raw(self, buf):
-    """Send raw data to the server"""
-    self.conn.write(buf)
-    self.output_write(buf)
-
-  def recv_raw(self, n):
-    """Receive raw data from the server"""
-    buf = ''
-    if self.__tend and time.time() > self.__tend:
-      raise TimeoutError()
-    while len(buf) < n:
-      c = self.conn.read(1)
-      if c != '':
-        buf += c
-      elif self.__tend and time.time() > self.__tend:
-        raise TimeoutError()
-    self.output_read(buf)
-    return buf
-
-  def send_cmd(self, cmd, fmt='', *args):
-    """Send a command, return a Reply object
-
-    cmd is either a byte value or a single character string.
-    If args is not empty, fmt and args are parameters for struct.pack (without
-    byte order indication).
-    Otherwise, fmt is the command string to send.
+    Return the tuple (pagesize,) or False on error.
     """
-    if not isinstance(cmd, basestring):
-      cmd = chr(cmd)
-    else:
-      ord(cmd) # check the value
-    if len(args):
-      data = struct.pack('<'+fmt, *args)
-    else:
-      data = fmt
-    self.send_raw(cmd + data)
-    return self.recv_reply()
-
-  def recv_reply(self):
-    """Read a reply
-
-    Leading null bytes are skipped.
-    See Reply for the meaning of fmt.
-    Return a Reply object.
-    """
-    while True:
-      size = ord(self.recv_raw(1))
-      if size != 0:
-        break
-    return Reply(self.recv_raw(size))
-
-
-  # Commands
-
-  def cmd_mirror(self, v):
-    """Ping/pong command
-
-    Return True if the same byte was read in the reply, False otherwise.
-    """
-    r = self.send_cmd('m', 'B', v)
-    if not r:
+    r = self.send_cmd('info')
+    if r is None or r.params.status != 'success':
       return False
-    return r.unpack('B')[0] == v
-
-  def cmd_infos(self):
-    """Retrieve server infos
-
-    Return a the tuple (pagesize,) or False on error.
-    """
-    r = self.send_cmd('i')
-    if not r:
-      return False
-    pagesize, = r.unpack('H')
-    return pagesize,
+    return struct.unpack('<H', r.params.data)
 
   def cmd_fuse_read(self):
     """Read fuses
 
     Return a tuple of fuse bytes or False on error.
     """
-    r = self.send_cmd('f')
-    if not r:
+    r = self.send_cmd('fuse_read')
+    if r is None or r.params.status != 'success':
       return False
-    return r.unpack('%dB' % len(r.data))
+    return struct.unpack('<%dB' % len(r.params.data), r.params.data)
 
   def cmd_prog_page(self, addr, buf, crc):
     """Program a page
 
     Return True on success, False on error and None on CRC mismatch.
     """
-    r = self.send_cmd('p', 'IH%ds' % len(buf), addr, crc, buf)
-    if r.status == self.STATUS_CRC_MISMATCH:
-      return None
-    if not r:
+    data = struct.pack('<IH', addr, crc)
+    r = self.send_cmd('prog_page', data, buf)
+    if r is None:
       return False
-    return True
+    if r.params.status == 'crc_mismatch':
+      return None
+    return r.params.status == 'success'
 
   def cmd_read_user_sig(self):
     """Read user signature
 
     Return user signature as a UserSig instance or False on error.
     """
-    r = self.send_cmd('s')
-    if not r:
+    r = self.send_cmd('read_user_sig')
+    if r is None or r.params.status != 'success':
       return False
-    return UserSig.unpack(r.data)
+    return UserSig.unpack(r.params.data)
 
   def cmd_prog_user_sig(self, sig):
     """Program the user signature
@@ -306,63 +274,35 @@ class BaseClient(object):
     """
     if isinstance(sig, UserSig):
       sig = sig.pack()
-    r = self.send_cmd('S', 'HB%ds' % len(sig), self.compute_crc(sig), len(sig), sig)
-    if r.status == self.STATUS_CRC_MISMATCH:
-      return None
-    if not r:
+    data = struct.pack('<HB', self.compute_crc(sig), len(sig))
+    r = self.send_cmd('prog_user_sig', data, sig)
+    if r is None:
       return False
-    return True
+    if r.params.status == 'crc_mismatch':
+      return None
+    return r.params.status == 'success'
 
   def cmd_mem_crc(self, start, size):
     """Compute the CRC of a given memory range
 
     Return the computed CRC or False on error.
     """
-    r = self.send_cmd('c', 'II', start, size)
-    if not r:
+    data = struct.pack('<II', start, size)
+    r = self.send_cmd('mem_crc', data)
+    if r is None or r.params.status != 'success':
       return False
-    return r.unpack('H')[0]
+    return struct.unpack('<H', r.params.data)[0]
 
-  def cmd_execute(self):
+  def cmd_boot(self):
     """Run the application
 
     Return True on success, False otherwise.
     """
-    r = self.send_cmd('x')
-    if not r:
+    r = self.send_cmd('boot')
+    if r is None or r.params.status != 'success':
       return False
     return True
 
-
-  # Timeout handling
-
-  @contextmanager
-  def timeout(self, t):
-    """Return a context to use as a timeout wrapper
-
-    Timeout value is provided in seconds.
-    After each read that returned nothing, and before each recv_raw() call, if
-    the given duration is expired, a TimeoutError is raised.
-
-    Note that actual behavior highly depends on the connection file object.
-    When using PySerial, it depends on the Serial's timeout value.
-    """
-    if self.__tend is not None:
-      raise RuntimeError("recursive timeout() call")
-    try:
-      self.__tend = time.time() + t
-      yield
-    finally:
-      self.__tend = None
-
-
-  # Output (default: do nothing)
-
-  def output_read(self, data): pass
-  def output_write(self, data): pass
-
-
-  # Utils
 
   @staticmethod
   def compute_crc(data):
@@ -378,69 +318,11 @@ class BaseClient(object):
     return crc
 
 
-class Reply(object):
-  """
-  Parse a server reply into an object
-
-  Attributes:
-    status -- reply status, as an int
-    fields -- list of parsed fields
-    data -- unparsed field data
-    raw -- raw copy of the reply
-
-  The response evaluates to True if it has a non-error status.
-  """
-
-  def __init__(self, s):
-    self.raw = s
-    self.status = ord(s[0])
-    self.data = s[1:]
-    self.fields = []
-
-  def unpack(self, fmt):
-    """Unpack data using a format string
-
-    fmt is a string as used by struct.unpack but without byte order
-    indication.
-    Unpacked fields are appended to the fields attribute and returned.
-    """
-    fmt = '<'+fmt  # little-endian
-    n = struct.calcsize(fmt)
-    l = struct.unpack(fmt, self.data[:n])
-    self.fields += l
-    self.data = self.data[n:]
-    return l
-
-  def unpack_sz(self):
-    """Unpack a NUL-terminated string
-
-    The unpacked string is appended to the fields attribute and returned.
-    """
-    try:
-      i = self.data.index('\0')
-    except ValueError:
-      raise ValueError("NUL byte not found")
-    s = self.data[:i]
-    self.fields.append(s)
-    self.data = self.data[i+1:]
-    return s
-
-  def __nonzero__(self):
-    return 1 if self.status < 0x80 else 0
-  __bool__ = __nonzero__
-
-
-
 class ClientError(StandardError):
   pass
 
 class Client(BaseClient):
   """Bootloader client with high level orders
-
-  If the given connection object defines an eof() method which returns True if
-  there is nothing to read (a call to read(1) will block) and False otherwise
-  or an inWaiting() method (as defined by pyserial objects), it will be used
-  for a better (and safer) behavior.
 
   Attributes:
     pagesize -- server's page size
@@ -452,54 +334,7 @@ class Client(BaseClient):
 
   def __init__(self, conn, **kw):
     BaseClient.__init__(self, conn)
-
-    if hasattr(conn, 'eof') and callable(conn.eof):
-      self._eof = conn.eof
-    elif hasattr(conn, 'inWaiting') and callable(conn.inWaiting):
-      self._eof = lambda: conn.inWaiting() == 0
-    else:
-      self._eof = None
-
-    # send init string, if any
-    if kw.get('init_send'):
-      self.send_raw(kw.get('init_send'))
-
-    self.clear_infos()
-
-  __sync_gen = None
-
-  @classmethod
-  def _sync_byte(cls):
-    """Return a synchronization byte to use"""
-    if cls.__sync_gen is None:
-      def gen():
-        vals = range(1, 255)
-        import random
-        random.shuffle(vals)
-        while True:
-          for i in vals:
-            yield i
-      cls.__sync_gen = gen()
-    return next(cls.__sync_gen)
-
-  def synchronize(self):
-    """Synchronize with the server to be ready to send a command"""
-    #XXX current implementation is lazy
-    # We wait for the expected reply to a mirror command.
-    # On unexpected data, a new mirror command is sent.
-    while True:
-      # flush first
-      if self._eof is not None:
-        while not self._eof():
-          self.recv_raw(1)
-      # send a mirror command
-      # don't use cmd_mirror() to control reply reading
-      sync = chr(self._sync_byte())
-      self.send_raw('m'+sync)
-      if (self.recv_raw(1) == '\x02' and  # size
-          self.recv_raw(1) == '\x01' and  # status
-          self.recv_raw(1) == sync):
-        break
+    self.clear_info()
 
 
   def program(self, fhex, fhex2=None, user_sig=None):
@@ -540,8 +375,7 @@ class Client(BaseClient):
     if page_count == 0:
       return None
 
-    self.synchronize()
-
+    # program user signature
     if user_sig is not None:
       if isinstance(user_sig, UserSig):
         user_sig = user_sig.pack()
@@ -626,7 +460,6 @@ class Client(BaseClient):
     if curdata:
       chunks2.append((curaddr, curdata))
 
-    self.synchronize()
     for addr,data in chunks2:
       r = self.cmd_mem_crc(addr, len(data))
       if r is False:
@@ -636,23 +469,21 @@ class Client(BaseClient):
     return True
 
 
-  def update_infos(self):
-    """Get device infos, update associated attributes"""
-    self.synchronize()
-    r = self.cmd_infos()
+  def update_info(self):
+    """Get device info, update associated attributes"""
+    r = self.cmd_info()
     if not r:
       raise ClientError("cannot retrieve device info")
     self.pagesize, = r
     return r
 
-  def clear_infos(self):
-    """Clear cached device infos"""
+  def clear_info(self):
+    """Clear cached device info"""
     self.pagesize = None
 
 
   def read_fuses(self):
     """Read fuses and return a tuple of bytes"""
-    self.synchronize()
     r = self.cmd_fuse_read()
     if r is False:
       raise ClientError("failed to read fuses")
@@ -660,7 +491,6 @@ class Client(BaseClient):
 
   def read_user_sig(self):
     """Read user signature, return a UserSig instance"""
-    self.synchronize()
     r = self.cmd_read_user_sig()
     if r is False:
       raise ClientError("failed to read user signature")
@@ -669,8 +499,7 @@ class Client(BaseClient):
 
   def boot(self):
     """Boot the device"""
-    self.synchronize()
-    r = self.cmd_execute()
+    r = self.cmd_boot()
     if r is False:
       raise ClientError("boot failed")
     return
@@ -686,7 +515,7 @@ class Client(BaseClient):
     else:
       data = load_hex(fhex)
       if self.pagesize is None:
-        self.update_infos()
+        self.update_info()
       pages = split_hex_chunks(data, self.pagesize, self.UNUSED_BYTE)
     if not len(pages):
       raise ValueError("empty HEX data")
@@ -698,9 +527,9 @@ class Client(BaseClient):
     return sorted(set(p1) - set(p2))
 
   # Output
-  def output_read(self, data):
+  def output_recv_frame(self, data):
     pass
-  def output_write(self, data):
+  def output_send_frame(self, data):
     pass
   def output_program_progress(self, ncur, nmax):
     pass
@@ -744,8 +573,6 @@ def main():
       help="don't update user signature")
   parser.add_argument('--force-device-name', action='store_true',
       help="don't check device name")
-  parser.add_argument('--init-send', dest='init_send',
-      help="string to send at connection (eg. to reset the device)")
   parser.add_argument('-v', '--verbose', action='store_true',
       help="print transferred data on stderr")
   parser.add_argument('hex', nargs='?',
@@ -770,12 +597,12 @@ def main():
       self.verbose = kw.get('verbose', False)
       Client.__init__(self, conn, **kw)
 
-    def output_read(self, data):
+    def output_recv_frame(self, frame):
       if self.verbose:
-        sys.stderr.write(" << %r\n" % data)
-    def output_write(self, data):
+        sys.stderr.write(" << %r\n" % frame)
+    def output_send_frame(self, frame):
       if self.verbose:
-        sys.stderr.write(" >> %r\n" % data)
+        sys.stderr.write(" >> %r\n" % frame)
 
     def output_program_progress(self, ncur, nmax):
       sys.stdout.write("\rprogramming: page %3d / %3d  -- %2.2f%%"
@@ -785,10 +612,16 @@ def main():
       sys.stdout.write("\n")
 
 
-  client = CliClient(conn, verbose=args.verbose, init_send=args.init_send)
+  rome.Frame.set_ack_range(128, 256)
+  client = CliClient(conn, verbose=args.verbose)
+  client.start()
   print "bootloader waiting..."
-  client.synchronize()
-  client.update_infos()
+  while True:
+    try:
+      client.update_info()
+      break
+    except ClientError:
+      pass
 
   if not args.force_device_name and args.device_name is not None:
     sig = client.read_user_sig()
