@@ -162,6 +162,7 @@ class BaseClient(rome.Client):
   Base class for bootloader client
 
   Attributes:
+    device -- ID of device to program, None to not set
     cur_order -- current order waiting for a reply, or None
     cur_reply -- reply to current order
     cur_reply_ev -- Event to wait for current reply
@@ -171,8 +172,9 @@ class BaseClient(rome.Client):
   msg_bootloader = rome.frame.messages_by_name['bootloader']
   msg_bootloader_r = rome.frame.messages_by_name['bootloader_r']
 
-  def __init__(self, fo):
+  def __init__(self, fo, **kw):
     rome.Client.__init__(self, fo)
+    self.device = kw.get('device') or 0
     self.cur_order = None
     self.cur_reply = None
     self.cur_reply_ev = threading.Event()
@@ -210,7 +212,7 @@ class BaseClient(rome.Client):
     # done in rome.Client.
     self.cur_reply_ev.clear()
     try:
-      self.cur_order = rome.Frame(self.msg_bootloader, cmd, data)
+      self.cur_order = rome.Frame(self.msg_bootloader, self.device, cmd, data)
       for i in range(self.retry_count):
         self.send(self.cur_order)
         if xdata is not None:
@@ -333,7 +335,7 @@ class Client(BaseClient):
   UNUSED_BYTE = '\xFF'  # value of programmed unused bytes
 
   def __init__(self, conn, **kw):
-    BaseClient.__init__(self, conn)
+    BaseClient.__init__(self, conn, **kw)
     self.clear_info()
 
 
@@ -567,12 +569,12 @@ def main():
       help="print value of fuse bytes")
   parser.add_argument('--read-user-sig', action='store_true',
       help="print value of user signature")
-  parser.add_argument('--device-name',
-      help="device name, use in user signature, check before programming")
+  parser.add_argument('--device',
+      help="target device name")
   parser.add_argument('--keep-user-sig', action='store_true',
       help="don't update user signature")
-  parser.add_argument('--force-device-name', action='store_true',
-      help="don't check device name")
+  parser.add_argument('--sig-device-name', action='store_true',
+      help="device name to set in signature (if --device not provided)")
   parser.add_argument('-v', '--verbose', action='store_true',
       help="print transferred data on stderr")
   parser.add_argument('hex', nargs='?',
@@ -613,7 +615,7 @@ def main():
 
 
   rome.Frame.set_ack_range(128, 256)
-  client = CliClient(conn, verbose=args.verbose)
+  client = CliClient(conn, verbose=args.verbose, device=args.device)
   client.start()
   print "bootloader waiting..."
   while True:
@@ -623,11 +625,6 @@ def main():
     except ClientError:
       pass
 
-  if not args.force_device_name and args.device_name is not None:
-    sig = client.read_user_sig()
-    if sig.device_name is not None and sig.device_name != args.device_name:
-      print "device name mismatch: got %r, expected %r" % (sig.device_name, args.device_name)
-      return
   if args.read_fuses:
     fuses = client.read_fuses()
     print ("fuses:"+' %02x'*len(fuses)) % fuses
@@ -635,8 +632,10 @@ def main():
     print "programming..."
     if args.keep_user_sig:
       sig = None
+    elif args.sig_device_name:
+      sig = UserSig.default(device_name=args.sig_device_name)
     else:
-      sig = UserSig.default(device_name=args.device_name)
+      sig = UserSig.default(device_name=args.device)
     ret = client.program(args.hex, args.previous, user_sig=sig)
     if ret is None:
       print "nothing to program"

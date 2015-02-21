@@ -288,9 +288,12 @@ typedef enum {
 /// Bootloader message frame (ROME frame payload)
 typedef struct {
   uint8_t ack;
+  uint32_t device_id;
   uint8_t cmd;
-  uint8_t data[255-2];
+  uint8_t data[255-6];
 } frame_t;
+
+_Static_assert(sizeof(frame_t) == 255, "wrong frame_t size, check size of its data field");
 
 
 /** @brief Send a ROME bootloader reply frame
@@ -349,6 +352,10 @@ static void boot(void)
   run_app();
   __builtin_unreachable();
 }
+
+
+/// Loaded signature, cached
+user_sig_t user_sig;
 
 
 /** @name Bootloader commands
@@ -470,10 +477,11 @@ static void cmd_mem_crc(const frame_t *frame)
  */
 static void cmd_read_user_sig(const frame_t *frame)
 {
-  user_sig_t sig;
-  user_sig_read(&sig);
+  if(user_sig.version == 0) {
+    user_sig_read(&user_sig);
+  }
 
-  reply_data(frame, (void*)&sig, sizeof(sig));
+  reply_data(frame, (void*)&user_sig, sizeof(user_sig));
 }
 
 
@@ -525,6 +533,8 @@ static void cmd_prog_user_sig(const frame_t *frame)
   boot_nvm_busy_wait();
   boot_user_sig_write();
   boot_nvm_busy_wait();
+  // invalid signature cache
+  user_sig.version = 0;
 
   reply_success(frame);
 }
@@ -584,6 +594,10 @@ int main(void)
     uart_send(start_log[ii]);
   }
 
+  // get our device ID
+  user_sig_read(&user_sig);
+  uint32_t device_id = user_sig.id.fourcc;
+
   // timeout before booting (approximate)
   const uint32_t timeout0 = (uint32_t)(BOOTLOADER_TIMEOUT) * (float)CLOCK_CPU_FREQ/(32.*1000);
   uint32_t timeout = timeout0;
@@ -622,6 +636,11 @@ int main(void)
     crc ^= uart_recv_timeout(&timeout);
     crc ^= uart_recv_timeout(&timeout) << 8;
     if(crc != 0) {
+      continue;
+    }
+
+    // not for our device, skip
+    if(payload.frame.device != 0 && payload.frame.device != device_id) {
       continue;
     }
 
