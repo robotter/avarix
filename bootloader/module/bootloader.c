@@ -15,6 +15,7 @@
  *  @brief Bootloader code
  */
 #include <stdbool.h>
+#include <stddef.h>
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/pgmspace.h>
@@ -599,7 +600,7 @@ int main(void)
     crc = _crc_ccitt_update(crc, mid);
 
     // not a bootloader frame, or invalid payload (too small)
-    if(mid != ROME_MID_BOOTLODADER || plsize < 1) {
+    if(mid != ROME_MID_BOOTLODADER || plsize < offsetof(frame_t, data)) {
       // consume payload but don't process
       for(uint8_t i=0; i<plsize; i++) {
         uart_recv_timeout(&timeout);
