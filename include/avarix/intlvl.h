@@ -62,7 +62,7 @@ typedef enum {
 #define INTLVL_ENABLE_BLOCK(lvl)  INTLVL_ENABLE_BLOCK_BM(INTLVL_BM_HI(lvl))
 
 /// Disable all interrupts in a block of code
-#define INTLVL_DISABLE_ALL_BLOCK()  INTLVL_ENABLE_BLOCK(INTLVL_HI)
+#define INTLVL_DISABLE_ALL_BLOCK()  INTLVL_DISABLE_BLOCK(INTLVL_HI)
 
 /// Enable all interrupts in a block of code
 #define INTLVL_ENABLE_ALL_BLOCK()  INTLVL_ENABLE_BLOCK(INTLVL_LO)
