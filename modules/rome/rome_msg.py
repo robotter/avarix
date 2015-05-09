@@ -49,7 +49,7 @@ class CodeGenerator:
 
   def enum_types(self):
     # gather enum types from all messages
-    enums = ( t
+    enums = set( t
         for msg in self.messages
         for v,t in msg.ptypes
         if issubclass(t, rome.types.EnumType) )
