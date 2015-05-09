@@ -56,7 +56,7 @@ class CodeGenerator:
     ret = ''
     for enum in enums:
       values = ''.join( '  %s = %d,\n' % (self.type_enum_name(enum, k), v)
-          for k,v in enum.values.items() )
+          for k,v in sorted(enum.values.items()) )
       ret += "typedef enum {\n%s} rome_enum_%s_t;\n\n" % (values, enum.name)
     return ret
 
