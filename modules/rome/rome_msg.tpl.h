@@ -28,7 +28,6 @@
 #endif
 
 // include after checks of min/max values, on purpose
-#include <rome/rome.h>
 #include <stdio.h>
 #include <string.h>
 
