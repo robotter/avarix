@@ -211,6 +211,10 @@ void adxrs_capture_manual(float scale);
  */
 void adxrs_calibration_mode(bool activate);
 
+/** @brief Return TRUE if calibration is active, FALSE otherwise
+ */
+bool adxrs_get_calibration_mode(void);
+
 /// Get current angle value
 float adxrs_get_angle(void);
 
@@ -219,6 +223,12 @@ void adxrs_set_angle(float angle);
 
 /// Get current measured angular speed
 float adxrs_get_speed(void);
+
+/// Get current gyro offset
+int16_t adxrs_get_offset(void);
+
+/// Get current gyro offset sqsd
+float adxrs_get_offset_sqsd(void);
 
 //@}
 

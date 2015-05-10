@@ -12,10 +12,13 @@
 #include "adxrs.h"
 #include "adxrs_config.h"
 
+#define T int16_t
+#include "fifo.h"
+#undef T
+
 #if (CLOCK_PER_FREQ / ADXRS_SPI_PRESCALER) > 8080000
 # error ADXRS_SPI_PRESCALER is too low, max ADXRS SPI frequency is 8.08MHz
 #endif
-
 
 // Get SPI to use and the interrupt vector
 
@@ -60,6 +63,7 @@
 #endif
 
 
+#define CALIBRATION_SAMPLES_LENGTH 101
 
 /** @brief ADXRS gyro data
  *
@@ -74,8 +78,17 @@ typedef struct {
   float capture_scale;  ///< scaling coefficient for captured values
   uint8_t capture_index;  ///< index of next captured byte
   int16_t capture_speed;  ///< last (valid) captured angle speed
-  bool calibration;  ///< calibration mode
-  int16_t calibration_offset;  ///< calibration offset
+
+  struct {
+    bool mode;  ///< calibration mode
+    int16_t offset;  ///< calibration offset
+    float offset_sqsd; ///< calibration squared sd
+
+    float sum;
+    float sqsum;
+    fifo_t samples;
+    int16_t samples_buffer[CALIBRATION_SAMPLES_LENGTH];
+  } calibration;
 } adxrs_t;
 
 
@@ -88,8 +101,12 @@ void adxrs_init(portpin_t cspp)
   gyro.cspp = cspp;
   gyro.response.type = ADXRS_RESPONSE_NONE;
   gyro.angle = 0;
-  gyro.calibration = false;
-  gyro.calibration_offset = 0;
+  gyro.calibration.mode = false;
+  gyro.calibration.offset = 0;
+
+  fifo_init(&gyro.calibration.samples,
+    gyro.calibration.samples_buffer,
+    CALIBRATION_SAMPLES_LENGTH);
 
   // initialize SPI
   portpin_dirset(&PORTPIN_SPI_SS(&ADXRS_SPI));
@@ -300,7 +317,12 @@ void adxrs_capture_stop(void)
 
 void adxrs_calibration_mode(bool activate)
 {
-  gyro.calibration = activate;
+  gyro.calibration.mode = activate;
+}
+
+bool adxrs_get_calibration_mode()
+{
+  return gyro.calibration.mode;
 }
 
 float adxrs_get_angle(void)
@@ -327,7 +349,23 @@ float adxrs_get_speed(void) {
   return speed;
 }
 
-/// Update captured angle value
+int16_t adxrs_get_offset() {
+  int16_t offset;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    offset = gyro.calibration.offset;
+  }
+  return offset;
+}
+
+float adxrs_get_offset_sqsd() {
+  float sqsd;
+  INTLVL_DISABLE_ALL_BLOCK() {
+    sqsd = gyro.calibration.offset_sqsd;
+  }
+  return sqsd;
+}
+
+// Update captured angle value
 static void adxrs_update_angle(uint8_t data[4])
 {
   if(adxrs_check_response_parity(data) && (data[0] & 0x0C) == 0x04) {
@@ -340,18 +378,41 @@ static void adxrs_update_angle(uint8_t data[4])
 
   // check calibration signal rising edge
   static bool lcalibration = false;
-  if(gyro.calibration && !lcalibration) {
-    gyro.calibration_offset = gyro.capture_speed;
+  if(gyro.calibration.mode && !lcalibration) {
+    gyro.calibration.offset = gyro.capture_speed;
   }
-  lcalibration = gyro.calibration;
+  lcalibration = gyro.calibration.mode;
 
-  if(gyro.calibration) {
-    gyro.calibration_offset = 0.95*gyro.calibration_offset + 0.05*gyro.capture_speed;
+  if(gyro.calibration.mode) {
+    //gyro.calibration.offset = 0.95*gyro.calibration_offset + 0.05*gyro.capture_speed;
+
+    // update sum
+    float v = gyro.capture_speed;
+    if(fifo_isfull(&gyro.calibration.samples)) {
+      float ov = fifo_pop(&gyro.calibration.samples);
+      gyro.calibration.sum -= ov;
+      gyro.calibration.sqsum -= ov*ov;
+    }
+    gyro.calibration.sum += v;
+    gyro.calibration.sqsum += v*v;
+    fifo_push(&gyro.calibration.samples, v);
+
+    // compute mean value and mean of squared values
+    int n = fifo_size(&gyro.calibration.samples);
+    float mean = gyro.calibration.sum/n;
+    float sqmean = gyro.calibration.sqsum/n;
+
+    // compute squared standard dev of measure
+    float sqsd = 1.0*(n*sqmean - mean*mean)/(n*n);
+
+    // update gyro offset
+    gyro.calibration.offset = mean;
+    gyro.calibration.offset_sqsd = sqsd;
   }
   else {
     // update angle (internal) value
     // on error, previous (valid) speed value is used
-    gyro.capture_speed = gyro.capture_speed - gyro.calibration_offset;
+    gyro.capture_speed = gyro.capture_speed - gyro.calibration.offset;
     float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
     INTLVL_DISABLE_ALL_BLOCK() {
       gyro.angle = angle;
