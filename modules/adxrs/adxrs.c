@@ -103,6 +103,7 @@ void adxrs_init(portpin_t cspp)
   gyro.angle = 0;
   gyro.calibration.mode = false;
   gyro.calibration.offset = 0;
+  gyro.calibration.offset_sqsd = +INFINITY;
 
   fifo_init(&gyro.calibration.samples,
     gyro.calibration.samples_buffer,
