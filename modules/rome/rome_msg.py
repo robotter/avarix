@@ -80,10 +80,24 @@ class CodeGenerator:
 
   @classmethod
   def msg_macro_helper(cls, msg):
-    pnames = [ '_a_%s'%v for v,t in msg.ptypes ]
-    set_params = ''.join(
-        '  (_f)->%s.%s = (_a_%s); \\\n' % (msg.name, v, v)
-        for v,t in msg.ptypes )
+    pnames = []
+    set_params = ''
+    for v,t in msg.ptypes:
+      if issubclass(t, rome.types.rome_string):
+        pnames.append('_a_%s' % v)
+        set_params += '  strcpy((_f)->%(name)s.%(v)s, _a_%(v)s); \\\n' % {
+            'name': msg.name, 'v': v }
+      elif issubclass(t, rome.types.ArrayType):
+        pnames.append('_a_%s' % v)
+        set_params += '  memcpy((_f)->%(name)s.%(v)s, _a_%(v)s, %(asize)d * %(psize)d); \\\n' % {
+            'name': msg.name, 'v': v, 'asize': t.array_size, 'psize': t.base.packsize }
+      elif issubclass(t, rome.types.VarArrayType):
+        pnames.extend(('_a_%s' % v, '_n_%s' % v))
+        set_params += '  memcpy((_f)->%(name)s.%(v)s, _a_%(v)s, _n_%(v)s * %(psize)d); \\\n' % {
+            'name': msg.name, 'v': v, 'psize': t.base.packsize }
+      else:
+        pnames.append('_a_%s' % v)
+        set_params += '  (_f)->%s.%s = (_a_%s); \\\n' % (msg.name, v, v)
     if isinstance(msg, rome.frame.Order):
       param_ack = ', _a_ack'
       paren_ack = ', (_a_ack)'
@@ -137,8 +151,7 @@ class CodeGenerator:
   def macro_helpers(self):
     ret = ''
     for msg in self.messages:
-      if not msg.varsize:
-        ret += self.msg_macro_helper(msg)
+      ret += self.msg_macro_helper(msg)
     return ret
 
   @classmethod
