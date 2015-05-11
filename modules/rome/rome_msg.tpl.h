@@ -119,12 +119,18 @@ typedef struct {
 /// Return maximum size of a variable-size field
 #define ROME_MAX_FIELD_SIZE(msg, field)
 
+/// Return actual size of a vararray field
+#define ROME_FRAME_VARARRAY_SIZE(frame, msg, field)
+
 //@}
 
 #else
 
 #define ROME_MAX_FIELD_SIZE(_msg, _field) \
    (sizeof((rome_frame_t*)0)->_data - (size_t)&((rome_frame_t*)0)->_msg._field)
+
+#define ROME_FRAME_VARARRAY_SIZE(_frame, _msg, _field) \
+   ((_frame)->plsize - (size_t)&((rome_frame_t*)0)->_msg._field)
 
 #define ROME_LOG(_i, _sev, _msg) do { \
   uint8_t _buf[2 + 1 + sizeof(_msg)-1]; \
