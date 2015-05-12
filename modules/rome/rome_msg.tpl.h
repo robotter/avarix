@@ -130,7 +130,7 @@ typedef struct {
    (sizeof((rome_frame_t*)0)->_data - (size_t)&((rome_frame_t*)0)->_msg._field)
 
 #define ROME_FRAME_VARARRAY_SIZE(_frame, _msg, _field) \
-   ((_frame)->plsize - (size_t)&((rome_frame_t*)0)->_msg._field)
+   (((_frame)->plsize - (size_t)((rome_frame_t*)0)->_msg._field + 2)/sizeof(*((rome_frame_t*)0)->_msg._field))
 
 #define ROME_LOG(_i, _sev, _msg) do { \
   uint8_t _buf[2 + 1 + sizeof(_msg)-1]; \

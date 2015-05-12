@@ -82,6 +82,7 @@ class CodeGenerator:
   def msg_macro_helper(cls, msg):
     pnames = []
     set_params = ''
+    extrasize = ''
     for v,t in msg.ptypes:
       if issubclass(t, rome.types.rome_string):
         pnames.append('_a_%s' % v)
@@ -95,6 +96,7 @@ class CodeGenerator:
         pnames.extend(('_a_%s' % v, '_n_%s' % v))
         set_params += '  memcpy((_f)->%(name)s.%(v)s, _a_%(v)s, _n_%(v)s * %(psize)d); \\\n' % {
             'name': msg.name, 'v': v, 'psize': t.base.packsize }
+        extrasize = '+(_n_%(v)s)*%(psize)d' % { 'v': v, 'psize': t.base.packsize }
       else:
         pnames.append('_a_%s' % v)
         set_params += '  (_f)->%s.%s = (_a_%s); \\\n' % (msg.name, v, v)
@@ -109,13 +111,13 @@ class CodeGenerator:
 
     tpl = (
         '#define ROME_SET_%(NAME)s(_f%(param_ack)s%(pnames)s) do { \\\n'
-        '  (_f)->plsize = %(plsize)s; \\\n'
+        '  (_f)->plsize = %(plsize)s%(extrasize)s; \\\n'
         '  (_f)->mid = %(MID)s; \\\n'
         '%(set_ack)s%(set_params)s'
         '} while(0)\n'
         '\n'
         '#define ROME_SEND_%(NAME)s(_i%(param_ack)s%(pnames)s) do { \\\n'
-        '  uint8_t _buf[2+%(plsize)s]; \\\n'
+        '  uint8_t _buf[2+%(plsize)s%(extrasize)s]; \\\n'
         '  rome_frame_t *_frame = (rome_frame_t*)_buf; \\\n'
         '  ROME_SET_%(NAME)s(_frame%(paren_ack)s%(paren_pnames)s); \\\n'
         '  rome_send((_i), _frame); \\\n'
@@ -127,7 +129,7 @@ class CodeGenerator:
       tpl += (
           '#ifdef ROME_ACK_MIN\n'
           '#define ROME_SENDWAIT_%(NAME)s(_i%(pnames)s) do { \\\n'
-          '  uint8_t _buf[2+%(plsize)s]; \\\n'
+          '  uint8_t _buf[2+%(plsize)s%(extrasize)s]; \\\n'
           '  rome_frame_t *_frame = (rome_frame_t*)_buf; \\\n'
           '  ROME_SET_%(NAME)s(_frame, 0%(paren_pnames)s); \\\n'
           '  rome_sendwait((_i), _frame); \\\n'
@@ -141,6 +143,7 @@ class CodeGenerator:
             'pnames': ''.join(', '+s for s in pnames),
             'paren_pnames': ''.join(', (%s)' % s for s in pnames),
             'plsize': msg.plsize,
+            'extrasize': extrasize,
             'MID': cls.mid_enum_name(msg),
             'set_params': set_params,
             'param_ack': param_ack,
