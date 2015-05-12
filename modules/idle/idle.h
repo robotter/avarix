@@ -12,7 +12,7 @@
  * set_min_period(100)  # 0.1ms
  * # Add tasks
  * add_task('always', None)    # always executed when idle
- * add_task('periodic', 100000, 5)  # executed every 10ms
+ * add_task('periodic', 10000, 5)  # executed every 10ms
  * \endcode
  *
  * Define callback methods and set them (usually in initialization code):
