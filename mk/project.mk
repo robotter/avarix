@@ -309,7 +309,8 @@ get-preproc-%:
 prog: $(OUTPUTS)
 	$(AVRDUDE_CMD) \
 		-U flash:w:$(TARGET).$(FORMAT_EXTENSION) \
-		-U eeprom:w:$(TARGET).eep
+		$$( [ `avr-size $(TARGET).eep | tail -n1 | cut -f4` = 0 ] || echo \
+			'-U eeprom:w:$(TARGET).eep' )
 
 
 # Cleaning
