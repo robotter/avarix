@@ -79,6 +79,8 @@ typedef struct {
   uint8_t capture_index;  ///< index of next captured byte
   int16_t capture_speed;  ///< last (valid) captured angle speed
 
+  bool integrate; ///< if true adxrs module will integrate position over time
+
   struct {
     bool mode;  ///< calibration mode
     int16_t offset;  ///< calibration offset
@@ -104,6 +106,8 @@ void adxrs_init(portpin_t cspp)
   gyro.calibration.mode = false;
   gyro.calibration.offset = 0;
   gyro.calibration.offset_sqsd = +INFINITY;
+
+  gyro.integrate = true;
 
   fifo_init(&gyro.calibration.samples,
     gyro.calibration.samples_buffer,
@@ -321,6 +325,11 @@ void adxrs_calibration_mode(bool activate)
   gyro.calibration.mode = activate;
 }
 
+void adxrs_integrate(bool activate)
+{
+  gyro.integrate = activate;
+}
+
 bool adxrs_get_calibration_mode()
 {
   return gyro.calibration.mode;
@@ -385,7 +394,6 @@ static void adxrs_update_angle(uint8_t data[4])
   lcalibration = gyro.calibration.mode;
 
   if(gyro.calibration.mode) {
-    //gyro.calibration.offset = 0.95*gyro.calibration_offset + 0.05*gyro.capture_speed;
 
     // update sum
     float v = gyro.capture_speed;
@@ -414,9 +422,14 @@ static void adxrs_update_angle(uint8_t data[4])
     // update angle (internal) value
     // on error, previous (valid) speed value is used
     gyro.capture_speed = gyro.capture_speed - gyro.calibration.offset;
-    float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
-    INTLVL_DISABLE_ALL_BLOCK() {
-      gyro.angle = angle;
+    if(gyro.integrate) {
+      float angle = gyro.angle + gyro.capture_speed * gyro.capture_scale;
+      INTLVL_DISABLE_ALL_BLOCK() {
+        gyro.angle = angle;
+      }
+    }
+    else {
+      // nothing to do
     }
   }
 }

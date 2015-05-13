@@ -211,6 +211,11 @@ void adxrs_capture_manual(float scale);
  */
 void adxrs_calibration_mode(bool activate);
 
+/** @brief if TRUE adxrs will integrate speed over time,
+ * if FALSE it will not and angle will not change
+ */
+void adxrs_integrate(bool activate);
+
 /** @brief Return TRUE if calibration is active, FALSE otherwise
  */
 bool adxrs_get_calibration_mode(void);
