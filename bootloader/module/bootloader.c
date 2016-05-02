@@ -595,7 +595,7 @@ int main(void)
 
   uart_init();
 
-  SEND_MESSAGE("boot ENTER");
+  SEND_MESSAGE("boot enter");
   // timeout before booting
   uint8_t i = (uint32_t)(BOOTLOADER_TIMEOUT) * (float)CLOCK_CPU_FREQ/(65536*4*1000);
   for(;;) {
