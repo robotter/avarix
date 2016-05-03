@@ -500,6 +500,8 @@ class Client(BaseClient):
           self.recv_raw(1) == '\x01' and  # status
           self.recv_raw(1) == sync):
         break
+      # wait a bit to receive all pending data before flushing it
+      time.sleep(0.1)
 
 
   def program(self, fhex, fhex2=None, user_sig=None):
