@@ -183,7 +183,7 @@ class BaseClient(rome.Client):
     # use default values more suitable to bootloader
     # (programming page takes time)
     self.retry_count = 5
-    self.retry_period = 2.0
+    self.retry_period = 0.5
 
   def on_frame(self, frame):
     with self.cur_reply_cond:
