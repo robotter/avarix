@@ -145,8 +145,8 @@ typedef struct {
 /// Send a formatted log message
 #define ROME_LOGF(_i, _sev, _fmt, ...) do { \
   rome_frame_t _frame; \
-  int n = snprintf(_frame.log.msg, ROME_MAX_FIELD_SIZE(log, msg)-1, _fmt, ##__VA_ARGS__); \
-  _frame.plsize = 1 + (n <= (int)ROME_MAX_FIELD_SIZE(log, msg) ? n : (int)ROME_MAX_FIELD_SIZE(log, msg)); \
+  int _n = snprintf(_frame.log.msg, ROME_MAX_FIELD_SIZE(log, msg)-1, _fmt, ##__VA_ARGS__); \
+  _frame.plsize = 1 + (_n <= (int)ROME_MAX_FIELD_SIZE(log, msg) ? _n : (int)ROME_MAX_FIELD_SIZE(log, msg)); \
   _frame.mid = ROME_MID_LOG; \
   _frame.log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
   rome_send((_i), &_frame); \
