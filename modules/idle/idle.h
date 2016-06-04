@@ -50,7 +50,7 @@ void idle(void);
  * If the callback is null, the task is disabled and will not be executed.
  */
 #define idle_set_callback(task,callback) \
-    idle_set_callback_(IDLE_TASK_##task, callback)
+    idle_set_callback_(IDLE_TASK_##task, (callback))
 
 #ifndef DOXYGEN
 void idle_set_callback_(uint8_t index, idle_callback_t cb);

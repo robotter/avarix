@@ -30,7 +30,7 @@ typedef union {
 #define DEVICE_ID_FROM_STR(id) ({ \
   _Static_assert(sizeof(id) == 5, "Invalid device ID name size"); \
   _Static_assert((id)[4] == '\0', "Unexpected device ID name terminator"); \
-  (device_id_t){ .name = {id[0], id[1], id[2], id[3]} }; \
+  (device_id_t){ .name = {(id)[0], (id)[1], (id)[2], (id)[3]} }; \
 })
 
 

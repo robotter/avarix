@@ -208,7 +208,7 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch);
  * of rounding error.
  */
 #define TIMER_CHECK_US_TO_TICKS_PRECISION(xn,us) \
-    _Static_assert((float)(uint32_t)TIMER_US_TO_TICKS(xn,us) == TIMER_US_TO_TICKS(xn,us), \
+    _Static_assert((float)(uint32_t)TIMER_US_TO_TICKS(xn,(us)) == TIMER_US_TO_TICKS(xn,(us)), \
                    "timer precision lost when converting microseconds to ticks")
 
 

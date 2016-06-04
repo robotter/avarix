@@ -27,7 +27,7 @@ typedef struct {
 #endif
 
 /// Return a portpin_t for PORTx, pin n.
-#define PORTPIN(x,n)  ((portpin_t){ &PORTX_(x), n })
+#define PORTPIN(x,n)  ((portpin_t){ &PORTX_(x), (n) })
 
 /// Unset \ref portpin_t value (port set to 0)
 #define PORTPIN_NONE  ((portpin_t){ 0, 0 })
@@ -113,24 +113,24 @@ inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 
 /// Get \c OCnx port pin of \c TCxn, channel \c c (from 0 to 3)
 #define PORTPIN_OCNX(tc,ch) \
-    ((portpin_t){ PORTPIN_MODULEXN_PORT(TC,tc),  4*PORTPIN_MODULEXN_N(TC,tc) + ch })
+    ((portpin_t){ PORTPIN_MODULEXN_PORT(TC,(tc)),  4*PORTPIN_MODULEXN_N(TC,(tc)) + (ch) })
 
 /// Get \c TXDn port pin of \c USARTxn
 #define PORTPIN_TXDN(usart) \
-    ((portpin_t){ PORTPIN_MODULEXN_PORT(USART,usart), 4*PORTPIN_MODULEXN_N(USART,usart) + 3 })
+    ((portpin_t){ PORTPIN_MODULEXN_PORT(USART,(usart)), 4*PORTPIN_MODULEXN_N(USART,(usart)) + 3 })
 
 /// Get \c SS port pin of \c SPIx
 #define PORTPIN_SPI_SS(spi) \
-    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 4 })
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,(spi)), 4 })
 /// Get \c MOSI port pin of \c SPIx
 #define PORTPIN_SPI_MOSI(spi) \
-    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 5 })
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,(spi)), 5 })
 /// Get \c MISO port pin of \c SPIx
 #define PORTPIN_SPI_MISO(spi) \
-    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 6 })
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,(spi)), 6 })
 /// Get \c SCK port pin of \c SPIx
 #define PORTPIN_SPI_SCK(spi) \
-    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,spi), 7 })
+    ((portpin_t){ PORTPIN_MODULEX_PORT(SPI,(spi)), 7 })
 
 //@}
 

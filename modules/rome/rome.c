@@ -130,14 +130,14 @@ void rome_reply_ack(rome_intf_t *intf, const rome_frame_t *frame)
 
 #ifdef ROME_ACK_MIN
 
-#define ROME_ACK_COUNT  (ROME_ACK_MAX-ROME_ACK_MIN+1)
+#define ROME_ACK_COUNT  ((ROME_ACK_MAX)-(ROME_ACK_MIN)+1)
 
 /// Array of ACK values, value is true when an ACK is expected
 static uint8_t rome_active_acks[ROME_ACK_COUNT];
 
 uint8_t rome_next_ack(void)
 {
-  static uint8_t ack = ROME_ACK_MAX; // MAX so that MIN is the first value to be used
+  static uint8_t ack = (ROME_ACK_MAX); // MAX so that MIN is the first value to be used
   uint8_t ret;
   // an available value should be found quickly
   // it's not risky to lock the loop
@@ -149,8 +149,8 @@ uint8_t rome_next_ack(void)
     uint8_t i;
 #endif
     for(i=0; i<ROME_ACK_COUNT; i++) {
-      ack = ack == ROME_ACK_MAX ? ROME_ACK_MIN : ack+1;
-      if(!rome_active_acks[ack-ROME_ACK_MIN]) {
+      ack = ack == (ROME_ACK_MAX) ? (ROME_ACK_MIN) : ack+1;
+      if(!rome_active_acks[ack-(ROME_ACK_MIN)]) {
         break;
       }
     }
@@ -163,12 +163,12 @@ uint8_t rome_next_ack(void)
 
 bool rome_ack_expected(uint8_t ack)
 {
-  return rome_active_acks[ack-ROME_ACK_MIN];
+  return rome_active_acks[ack-(ROME_ACK_MIN)];
 }
 
 void rome_free_ack(uint8_t ack)
 {
-  rome_active_acks[ack-ROME_ACK_MIN] = false;
+  rome_active_acks[ack-(ROME_ACK_MIN)] = false;
 }
 
 
@@ -183,7 +183,7 @@ void rome_sendwait(rome_intf_t *intf, rome_frame_t *frame)
     uint32_t tend = uptime_us() + ROME_ACK_TIMEOUT_US;
     do {
       ROME_SEND_INTLVL_DISABLE() {
-        if(!rome_active_acks[ack-ROME_ACK_MIN]) {
+        if(!rome_active_acks[ack-(ROME_ACK_MIN)]) {
           return;
         }
         idle();

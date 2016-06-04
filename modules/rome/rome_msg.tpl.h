@@ -133,23 +133,23 @@ typedef struct {
    (((_frame)->plsize - (size_t)((rome_frame_t*)0)->_msg._field + 2)/sizeof(*((rome_frame_t*)0)->_msg._field))
 
 #define ROME_LOG(_i, _sev, _msg) do { \
-  uint8_t _buf[2 + 1 + sizeof(_msg)-1]; \
-  rome_frame_t *_frame = (rome_frame_t*)_buf; \
-  _frame->plsize = 1 + sizeof(_msg)-1; \
-  _frame->mid = ROME_MID_LOG; \
-  _frame->log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
-  memcpy(_frame->log.msg, _msg, sizeof(_msg)-1); \
-  rome_send((_i), _frame); \
+  uint8_t _buf_[2 + 1 + sizeof(_msg)-1]; \
+  rome_frame_t *_frame_ = (rome_frame_t*)_buf_; \
+  _frame_->plsize = 1 + sizeof(_msg)-1; \
+  _frame_->mid = ROME_MID_LOG; \
+  _frame_->log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
+  memcpy(_frame_->log.msg, (_msg), sizeof(_msg)-1); \
+  rome_send((_i), _frame_); \
 } while(0)
 
 /// Send a formatted log message
 #define ROME_LOGF(_i, _sev, _fmt, ...) do { \
-  rome_frame_t _frame; \
-  int _n = snprintf(_frame.log.msg, ROME_MAX_FIELD_SIZE(log, msg)-1, _fmt, ##__VA_ARGS__); \
-  _frame.plsize = 1 + (_n <= (int)ROME_MAX_FIELD_SIZE(log, msg) ? _n : (int)ROME_MAX_FIELD_SIZE(log, msg)); \
-  _frame.mid = ROME_MID_LOG; \
-  _frame.log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
-  rome_send((_i), &_frame); \
+  rome_frame_t _frame_; \
+  int _n_ = snprintf(_frame_.log.msg, ROME_MAX_FIELD_SIZE(log, msg)-1, (_fmt), ##__VA_ARGS__); \
+  _frame_.plsize = 1 + (_n_ <= (int)ROME_MAX_FIELD_SIZE(log, msg) ? _n_ : (int)ROME_MAX_FIELD_SIZE(log, msg)); \
+  _frame_.mid = ROME_MID_LOG; \
+  _frame_.log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
+  rome_send((_i), &_frame_); \
 } while(0)
 
 #pragma avarix_tpl self.macro_helpers()
