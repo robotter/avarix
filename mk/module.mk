@@ -40,6 +40,7 @@ $(OBJS): $(GEN_FILES_FULL)
 # Module library file
 $(TARGET_OBJ): $(OBJS)
 	$(AR) rs $@ $(COBJS) 2>/dev/null
+	$(OBJCOPY) --prefix-alloc-sections .avarix.module $@
 
 $(SRC_COBJS): $(obj_dir)/%.$(HOST).o: $(src_dir)/%.c
 	@mkdir -p $(dir $@)

@@ -54,7 +54,7 @@ DEPS = $(COBJS:.o=.d)
 GEN_FILES_FULL = $(addprefix $(gen_dir)/,$(GEN_FILES))
 PROJECT_MODULES_LIBS = $(foreach m,$(PROJECT_MODULES_PATHS),$(obj_dir)/$(m).$(HOST).a)
 PROJECT_LIB = $(obj_dir)/$(TARGET).$(HOST).a
-
+LINKER_SCRIPT = $(AVARIX_DIR)/mk/avarix.ld
 
 ## Programs and commands
 
@@ -78,7 +78,7 @@ TARGET_OBJ = $(TARGET)
 OUTPUTS = $(TARGET_OBJ)
 endif
 PY_TEMPLATIZE = $(AVARIX_DIR)/mk/templatize.py
-export CC AR PY_TEMPLATIZE
+export CC AR OBJCOPY PY_TEMPLATIZE
 
 # On Windows, default find.exe is not the POSIX find
 ifeq ($(OS),Windows_NT)
@@ -115,7 +115,7 @@ CPPFLAGS += -mmcu=$(MCU)
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -fdata-sections -ffunction-sections
 ASFLAGS += -Wa,-gstabs
-LDFLAGS += -mmcu=$(MCU) -Wl,--gc-sections
+LDFLAGS += -mmcu=$(MCU) -Wl,--gc-sections,--script,$(LINKER_SCRIPT)
 
 printf_LDFLAGS_minimal := -Wl,-u,vfprintf -lprintf_min
 printf_LDFLAGS_standard :=
@@ -237,11 +237,7 @@ $(TARGET_OBJ): $(PROJECT_MODULES_LIBS) $(PROJECT_LIB)
 # project objects, with renamed sections
 $(PROJECT_LIB): $(OBJS)
 	$(AR) rs $@ $(OBJS) 2>/dev/null
-	$(OBJCOPY) \
-		--rename-section .text=.text.project \
-		--rename-section .data=.data.project \
-		--rename-section .bss=.bss.project \
-		$@
+	$(OBJCOPY) --prefix-alloc-sections .avarix.project $@
 
 size:
 	@$(SIZE) $(TARGET_OBJ)
