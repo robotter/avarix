@@ -31,5 +31,12 @@
 #define CLOCK_PER2_FREQ  CLOCK_CPU_FREQ
 #define CLOCK_PER4_FREQ  CLOCK_CPU_FREQ
 
+/** @brief Enable automatic run-time calibration of internal clock
+ *
+ * Only usable with 2MHz or 32Mhz internal clocks.
+ * It will use the 32768kHz calibrated clock as the adjustement source.
+ */
+#undef CLOCK_AUTO_RUN_TIME_CALIBRATION
+
 ///@endcond
 //@}
