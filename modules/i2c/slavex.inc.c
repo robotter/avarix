@@ -7,13 +7,14 @@
  * It is automatically undefined at the end of this file.
  */
 #include <avr/interrupt.h>
+#include <stddef.h>
 
 #define I2CX(s) X_(I2C,s)
 #define i2cX(s) X_(i2c,s)
 #define TWIX X_(TWI,)
 #define twiX(s) X_(TWI,s)
 
-// I2cX singleton
+// i2cX singleton
 i2cs_t i2cX();
 
 void i2cX(_init)(void) {
@@ -31,7 +32,7 @@ void i2cX(_init)(void) {
 }
 
 
-// Register callback 
+// Register callback
 void i2cX(s_register_callback)( void (*process_data_function)(void) ) {
   i2cX().process_data = process_data_function;
 }
@@ -80,8 +81,8 @@ static void i2cX(_transmit_handler(void)) {
  */
 static void i2cX(_receive_handler(void)) {
   /* Enable stop interrupt. */
-  uint8_t currentCtrlA = TWIX.SLAVE.CTRLA;
-  TWIX.SLAVE.CTRLA = currentCtrlA | TWI_SLAVE_PIEN_bm;
+  uint8_t currentctrla = TWIX.SLAVE.CTRLA;
+  TWIX.SLAVE.CTRLA = currentctrla | TWI_SLAVE_PIEN_bm;
 
   /* If free space in buffer. */
   if (i2cX().bytes_received < I2CS_RECEIVE_BUFFER_SIZE) {
@@ -114,8 +115,8 @@ static void i2cX(_address_match_handler(void)) {
   i2cX().bytes_transmit = 0;
 
   /* Disable stop interrupt. */
-  uint8_t currentCtrlA = TWIX.SLAVE.CTRLA;
-  TWIX.SLAVE.CTRLA = currentCtrlA & ~TWI_SLAVE_PIEN_bm;
+  uint8_t currentctrla = TWIX.SLAVE.CTRLA;
+  TWIX.SLAVE.CTRLA = currentctrla & ~TWI_SLAVE_PIEN_bm;
 
   /* Send ACK, wait for data interrupt. */
   TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
@@ -127,8 +128,8 @@ static void i2cX(_address_match_handler(void)) {
  */
 static void i2cX(_stop_handler(void)) {
   /* Disable stop interrupt. */
-  uint8_t currentCtrlA = TWIX.SLAVE.CTRLA;
-  TWIX.SLAVE.CTRLA = currentCtrlA & ~TWI_SLAVE_PIEN_bm;
+  uint8_t currentctrla = TWIX.SLAVE.CTRLA;
+  TWIX.SLAVE.CTRLA = currentctrla & ~TWI_SLAVE_PIEN_bm;
 
   /* Clear APIF, according to flowchart don't ACK or NACK */
   uint8_t currentStatus = TWIX.SLAVE.STATUS;
@@ -149,7 +150,7 @@ static void i2cX(_data_handler(void)) {
   }
 }
 
-/// Interrupt handler 
+// Interrupt handler
 ISR(twiX(_TWIS_vect)) {
   uint8_t current_status = TWIX.SLAVE.STATUS;
 

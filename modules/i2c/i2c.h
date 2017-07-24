@@ -12,7 +12,6 @@
 #include <avr/io.h>
 #include <avarix/intlvl.h>
 #include <stdint.h>
-#include <stddef.h>
 #include "i2c_config.h"
 #include "i2cs.h"
 
@@ -41,7 +40,7 @@ typedef struct TWI_MASTER_struct i2cm_t;
 # define i2cC  (&TWIC.MASTER)
 #elif (defined I2CC_SLAVE)
 # define X_(p,s)  p ## C ## s
-#include "slavex.inc.h"
+# include "slavex.inc.h"
 #endif
 
 #if (defined I2CD_MASTER) && (defined I2CD_SLAVE)
@@ -50,7 +49,7 @@ typedef struct TWI_MASTER_struct i2cm_t;
 # define i2cD  (&TWID.MASTER)
 #elif (defined I2CD_SLAVE)
 # define X_(p,s)  p ## D ## s
-#include "slavex.inc.h"
+# include "slavex.inc.h"
 #endif
 
 #if (defined I2CE_MASTER) && (defined I2CE_SLAVE)
@@ -59,7 +58,7 @@ typedef struct TWI_MASTER_struct i2cm_t;
 # define i2cE  (&TWIE.MASTER)
 #elif (defined I2CE_SLAVE)
 # define X_(p,s)  p ## E ## s
-#include "slavex.inc.h"
+# include "slavex.inc.h"
 #endif
 
 #if (defined I2CF_MASTER) && (defined I2CF_SLAVE)
@@ -68,7 +67,7 @@ typedef struct TWI_MASTER_struct i2cm_t;
 # define i2cF  (&TWIF.MASTER)
 #elif (defined I2CF_SLAVE)
 # define X_(p,s)  p ## F ## s
-#include "slavex.inc.h"
+# include "slavex.inc.h"
 #endif
 
 #endif
