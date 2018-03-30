@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.7
-
+from __future__ import print_function
 import re
 import sys
 import struct
@@ -9,6 +9,11 @@ from serial import Serial
 from contextlib import contextmanager
 from getpass import getuser
 import rome
+
+try:
+  basestring
+except NameError:
+  basestring = str
 
 
 def load_hex(f):
@@ -618,7 +623,7 @@ def main():
       parser.error("missing argument: HEX file")
   if args.previous is not None:
     if not args.program and args.previous:
-      parser.argument("extra argument: previous HEX file")
+      parser.error("extra argument: previous HEX file")
 
   # connect to serial line and setup stdin/out
   conn = Serial(args.port, args.baudrate, timeout=0.5)
@@ -637,7 +642,7 @@ def main():
 
     def output_program_progress(self, ncur, nmax):
       sys.stdout.write("\rprogramming: page %3d / %3d  -- %2.2f%%"
-                            % (ncur, nmax, (100.0*ncur)/nmax))
+                            % (ncur, nmax, int((100.0*ncur)//nmax)))
       sys.stdout.flush()
     def output_program_end(self):
       sys.stdout.write("\n")
@@ -646,7 +651,7 @@ def main():
   rome.Frame.set_ack_range(128, 256)
   client = CliClient(conn, verbose=args.verbose)
   client.start()
-  print "bootloader waiting..."
+  print("bootloader waiting...")
   while True:
     try:
       client.update_info()
@@ -657,38 +662,38 @@ def main():
   if not args.force_device_name and args.device_name is not None:
     sig = client.read_user_sig()
     if sig.device_name is not None and sig.device_name != args.device_name:
-      print "device name mismatch: got %r, expected %r" % (sig.device_name, args.device_name)
+      print("device name mismatch: got %r, expected %r" % (sig.device_name, args.device_name))
       return
   if args.read_fuses:
     fuses = client.read_fuses()
-    print ("fuses:"+' %02x'*len(fuses)) % fuses
+    print(("fuses:"+' %02x'*len(fuses)) % fuses)
   if args.program:
-    print "programming..."
+    print("programming...")
     if args.keep_user_sig:
       sig = None
     else:
       sig = UserSig.default(device_name=args.device_name)
     ret = client.program(args.hex, args.previous, user_sig=sig)
     if ret is None:
-      print "nothing to program"
+      print("nothing to program")
   if args.check:
-    print "CRC check..."
+    print("CRC check...")
     if client.check(args.hex, False):
-      print "CRC OK"
+      print("CRC OK")
     else:
-      print "CRC mismatch"
+      print("CRC mismatch")
       args.boot = False
   if args.read_user_sig:
     sig = client.read_user_sig()
     if sig.version is None:
-      print "user signature: no data"
+      print("user signature: no data")
     else:
-      print "user signature (version %d)" % sig.version
-      print "  device name: %s" % sig.device_name
-      print "  prog date: %s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(sig.prog_date))
-      print "  prog user: %s" % sig.prog_user
+      print("user signature (version %d)" % sig.version)
+      print("  device name: %s" % sig.device_name)
+      print("  prog date: %s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(sig.prog_date)))
+      print("  prog user: %s" % sig.prog_user)
   if args.boot:
-    print "boot"
+    print("boot")
     client.boot()
 
 

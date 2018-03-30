@@ -1,6 +1,17 @@
 import re
 import itertools
-from fractions import gcd
+from functools import reduce
+try:
+  from fractions import gcd
+except ImportError:
+  from math import gcd
+
+try:
+  execfile
+except NameError:
+  def execfile(filename, locals=None, globals=None):
+    with open(filename) as f:
+      exec(f.read(), locals, globals)
 
 
 def lcm(a, b):
@@ -101,7 +112,7 @@ class CodeGenerator:
 
       # identify groups of contiguous best offsets
       best_group = None
-      for _, g in itertools.groupby(enumerate(best_offsets), lambda (i,j): i-j):
+      for _, g in itertools.groupby(enumerate(best_offsets), lambda i,j: i-j):
         group = [ x[1] for x in g ]
         start, end = group[0], group[-1]
         if best_group is None or end - start > best_group[1] - best_group[0]:
@@ -121,7 +132,7 @@ class CodeGenerator:
 
   def slot_count(self):
     # lowest common multiple of all periods
-    periods = [ t.period/self.min_period for t in self.tasks if t.period is not None ]
+    periods = [ int(t.period//self.min_period) for t in self.tasks if t.period is not None ]
     if not len(periods):
       return 0
     return reduce(lcm, periods)

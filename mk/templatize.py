@@ -3,6 +3,13 @@ import sys
 import os
 import re
 import time  # used by templates
+from io import open  # force python3 behavior
+
+try:
+  basestring
+except NameError:
+  basestring = str
+
 
 
 def templatize(template, output, loc):
@@ -20,12 +27,12 @@ def templatize(template, output, loc):
   """
 
   if isinstance(template, basestring):
-    template = open(template, 'rb')
+    template = open(template, 'r', newline='')
   if isinstance(output, basestring):
     dout = os.path.dirname(output)
     if not os.path.isdir(dout):
       os.makedirs(dout)
-    output = open(output, 'wb')
+    output = open(output, 'w', newline='')
   def tpl_replace(m):
     code = m.group(1).replace('\\\n', '').strip()
     return str(eval(code, None, loc))
