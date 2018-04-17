@@ -1,10 +1,7 @@
 import re
 import itertools
 from functools import reduce
-try:
-  from fractions import gcd
-except ImportError:
-  from math import gcd
+from math import gcd
 
 try:
   execfile
@@ -65,7 +62,8 @@ class CodeGenerator:
         'set_min_period': set_min_period,
         'add_task': add_task,
         }
-    execfile(script, script_globals, script_locals)
+    with open(script) as f:
+      exec(f.read(), script_globals, script_locals)
     if self.min_period is None:
       raise ValueError("min period not set in config script")
     if self.tasks is None:
@@ -91,14 +89,13 @@ class CodeGenerator:
 
     # sort tasks by total cost (freq * cost)
     # non periodic tasks are put at the end
-    # None is less than every integer, so this is ok
-    self.tasks.sort(key=lambda t: None if t.period is None else t.period * t.cost, reverse=True)
+    self.tasks.sort(key=lambda t: -1 if t.period is None else t.period * t.cost, reverse=True)
 
     slots = [ [] for i in range(self.slot_count()) ]
     for task in self.tasks:
       if task.period is None:
         break  # next tasks' period are None too
-      period = task.period / self.min_period
+      period = int(task.period // self.min_period)
       # get the best offsets
       best_cost = None
       best_offsets = []
@@ -112,7 +109,7 @@ class CodeGenerator:
 
       # identify groups of contiguous best offsets
       best_group = None
-      for _, g in itertools.groupby(enumerate(best_offsets), lambda i,j: i-j):
+      for _, g in itertools.groupby(enumerate(best_offsets), lambda pair: pair[0]-pair[1]):
         group = [ x[1] for x in g ]
         start, end = group[0], group[-1]
         if best_group is None or end - start > best_group[1] - best_group[0]:

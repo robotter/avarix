@@ -4,7 +4,7 @@ MODULES = uart timer
 GEN_FILES = rome_msg.h
 
 ifeq ($(ROME_MESSAGES),)
-rome_msg_deps = $(shell python -c 'import rome_messages as m; print(m.__file__.replace(".pyc",".py"))')
+rome_msg_deps = $(shell python3 -c 'import rome_messages as m; print(m.__file__.replace(".pyc",".py"))')
 else
 rome_msg_deps = $(ROME_MESSAGES)
 endif

@@ -1,15 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import os
 import re
 import time  # used by templates
-from io import open  # force python3 behavior
-
-try:
-  basestring
-except NameError:
-  basestring = str
-
 
 
 def templatize(template, output, loc):
@@ -26,9 +19,9 @@ def templatize(template, output, loc):
 
   """
 
-  if isinstance(template, basestring):
+  if isinstance(template, str):
     template = open(template, 'r', newline='')
-  if isinstance(output, basestring):
+  if isinstance(output, str):
     dout = os.path.dirname(output)
     if not os.path.isdir(dout):
       os.makedirs(dout)

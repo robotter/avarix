@@ -1,5 +1,4 @@
-#!/usr/bin/env python2.7
-from __future__ import print_function
+#!/usr/bin/env python3
 import re
 import sys
 import struct
@@ -10,11 +9,6 @@ from contextlib import contextmanager
 from getpass import getuser
 import rome
 
-try:
-  basestring
-except NameError:
-  basestring = str
-
 
 def load_hex(f):
   """Parse an HEX file to a list of data chunks
@@ -22,7 +16,7 @@ def load_hex(f):
 
   Return a list of (address, data) pairs.
   """
-  if isinstance(f, basestring):
+  if isinstance(f, str):
     f = open(f, 'rb')
 
   ret = []
@@ -362,7 +356,7 @@ class BaseClient(rome.Client):
     return crc
 
 
-class ClientError(StandardError):
+class ClientError(Exception):
   pass
 
 class Client(BaseClient):
