@@ -2,13 +2,10 @@ import re
 import itertools
 from functools import reduce
 from math import gcd
-
 try:
-  execfile
-except NameError:
-  def execfile(filename, locals=None, globals=None):
-    with open(filename) as f:
-      exec(f.read(), locals, globals)
+  from math import gcd
+except ImportError:
+  from fractions import gcd  # Python < 3.5
 
 
 def lcm(a, b):
