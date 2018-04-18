@@ -49,10 +49,17 @@ class CodeGenerator:
 
   def enum_types(self):
     # gather enum types from all messages
-    enums = set( t
-        for msg in self.messages
-        for v,t in msg.ptypes
-        if issubclass(t, rome.types.EnumType) )
+    def enum_types_from_type(typ):
+      if issubclass(typ, rome.types.EnumType):
+        yield typ
+      elif issubclass(typ, (rome.types.ArrayType, rome.types.VarArrayType)):
+        yield from enum_types_from_type(typ.base)
+
+    enums = set()
+    for msg in self.messages:
+      for _, t in msg.ptypes:
+        enums |= set(enum_types_from_type(t))
+
     ret = ''
     for enum in enums:
       values = ''.join( '  %s = %d,\n' % (self.type_enum_name(enum, k), v)
