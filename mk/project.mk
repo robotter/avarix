@@ -115,12 +115,12 @@ CPPFLAGS += -mmcu=$(MCU)
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -fdata-sections -ffunction-sections
 ASFLAGS += -Wa,-gstabs
-LDFLAGS += -mmcu=$(MCU) -Wl,--gc-sections,--script,$(LINKER_SCRIPT)
+LDFLAGS += -mmcu=$(MCU)
 
 printf_LDFLAGS_minimal := -Wl,-u,vfprintf -lprintf_min
 printf_LDFLAGS_standard :=
 printf_LDFLAGS_advanced := -Wl,-u,vfprintf -lprintf_flt
-PROJECT_LDFLAGS = $(LDFLAGS)
+PROJECT_LDFLAGS = $(LDFLAGS) -Wl,--gc-sections,--script,$(LINKER_SCRIPT)
 PROJECT_LDFLAGS += $(printf_LDFLAGS_$(PRINTF_LEVEL))
 
 else
