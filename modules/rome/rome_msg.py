@@ -31,6 +31,8 @@ class CodeGenerator:
       return '%s[0]' % cls.c_typedecl(typ.base, name)
     elif issubclass(typ, rome.types.rome_string):
       return 'char %s[0]' % name
+    elif issubclass(typ, rome.types.rome_bytes):
+      return 'uint8_t %s[0]' % name
     else:
       raise TypeError("unsupported type: %s" % typ)
 
@@ -91,7 +93,7 @@ class CodeGenerator:
     set_params = ''
     extrasize = ''
     for v,t in msg.ptypes:
-      if issubclass(t, rome.types.rome_string):
+      if issubclass(t, (rome.types.rome_string, rome.types.rome_bytes)):
         pnames.append('_a_%s' % v)
         set_params += '  strcpy((_f)->%(name)s.%(v)s, _a_%(v)s); \\\n' % {
             'name': msg.name, 'v': v }
