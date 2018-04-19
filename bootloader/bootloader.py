@@ -11,21 +11,21 @@ import rome
 
 
 def load_hex(f):
-  """Parse an HEX file to a list of data chunks
+  """Parse an HEX (text) file to a list of data chunks
   f is a file object or a filename.
 
   Return a list of (address, data) pairs.
   """
   if isinstance(f, str):
-    f = open(f, 'rb')
+    f = open(f, 'r', lines='')
 
   ret = []
-  addr, data = 0, ''  # current chunk
+  addr, data = 0, b''  # current chunk
   offset = 0  # set by record type 02
   for s in f:
     s = s.strip()
     # only do basic checks needed for the algo
-    if re.match(':[\dA-Fa-f]{10,42}$', s) is None:
+    if re.match(r':[\dA-Fa-f]{10,42}$', s) is None:
       raise ValueError("invalid HEX line: %s" % s)
     fields = {
         'bytecount':  int(s[1:3],16),
@@ -46,15 +46,17 @@ def load_hex(f):
         # gap: store previous chunk
         if data:
           ret.append((addr, data))
-        addr, data = newaddr, ''
+        addr, data = newaddr, b''
       d = fields['data']
-      data += d.decode('hex')
+      data += bytes.fromhex(d)
     elif rt == 1:
       break # EOF
     elif rt == 2:
       if fields['bytecount'] != 2:
         raise ValueError("invalid extended segment address record")
       offset = int(fields['data'],16) << 4
+    elif rt == 3:
+      continue  # start address
     else:
       raise ValueError("invalid HEX record type: %s" % rt)
   # last chunk
@@ -70,7 +72,7 @@ def split_hex_chunks(chunks, size, fill):
   if not len(chunks):
     return []
   ret = []
-  paddr, pdata = 0, ''
+  paddr, pdata = 0, b''
 
   for addr, data in chunks:
     if addr < paddr+size:
@@ -83,7 +85,7 @@ def split_hex_chunks(chunks, size, fill):
         continue  # page still incomplete
       # start new page
       ret.append((paddr, pdata))
-      paddr, pdata, addr, data = addr+n, '', addr+n, data[n:]
+      paddr, pdata, addr, data = addr+n, b'', addr+n, data[n:]
     else:
       # pad and push previous page
       if pdata:
@@ -132,7 +134,7 @@ class UserSig:
   def default(cls, version=1, device_name=None, prog_date=None, prog_user=None):
     """Create a new default signature"""
     return cls(
-        version = 1,
+        version = version,
         device_name = "----" if device_name is None else device_name,
         prog_date = int(time.time()) if prog_date is None else prog_date,
         prog_user = getuser() if prog_user is None else prog_user,
@@ -200,7 +202,7 @@ class BaseClient(rome.Client):
     self.output_send_frame(frame)
 
 
-  def send_cmd(self, cmd, data=''):
+  def send_cmd(self, cmd, data=b''):
     """Send a command, wait for reply frame
     Return the reply frame or None on timeout.
     """
@@ -211,7 +213,7 @@ class BaseClient(rome.Client):
       try:
         ack = rome.Frame.next_ack()
         self.cur_order = rome.Frame(self.msg_bootloader, cmd, data, _ack=ack)
-        for i in range(self.retry_count):
+        for _ in range(self.retry_count):
           self.cur_reply = None
           self.send(self.cur_order)
           self.cur_reply_cond.wait(self.retry_period)
@@ -239,7 +241,7 @@ class BaseClient(rome.Client):
           data = struct.pack('<HB', offset, len(data)) + data
           ack = rome.Frame.next_ack()
           self.cur_order = rome.Frame(self.msg_bootloader, 'buffer', data, _ack=ack)
-          for i in range(self.retry_count):
+          for _ in range(self.retry_count):
             self.cur_reply = None
             self.send(self.cur_order)
             self.cur_reply_cond.wait(self.retry_period)
@@ -305,7 +307,7 @@ class BaseClient(rome.Client):
     """
     if isinstance(sig, UserSig):
       sig = sig.pack()
-    r = self.send_cmd('prog_user_sig', '')
+    r = self.send_cmd('prog_user_sig', b'')
     if r is None:
       return False
     elif r.params.status != 'success':
@@ -368,7 +370,7 @@ class Client(BaseClient):
   """
 
   CRC_RETRY = 5  # maximum number of retry on CRC mismatch
-  UNUSED_BYTE = '\xFF'  # value of programmed unused bytes
+  UNUSED_BYTE = b'\xFF'  # value of programmed unused bytes
 
   def __init__(self, conn, **kw):
     BaseClient.__init__(self, conn)
