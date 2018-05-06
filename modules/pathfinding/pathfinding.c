@@ -6,7 +6,6 @@
 
 #define PATHFINDING_COST_MAX  0xffffffff
 
-
 static uint32_t vertex_cost(const pathfinding_node_t *start, const pathfinding_node_t *goal)
 {
   const int16_t dx = start->x - goal->x;
@@ -28,7 +27,7 @@ static uint32_t vertex_cost(const pathfinding_node_t *start, const pathfinding_n
     }
     bit >>= 2;
   }
-  return res;
+  return res + PATHFINDING_NODE_COST;
 }
 
 #define FINDER_VERTEX_COST(finder, index0, index1) \

@@ -97,12 +97,14 @@ class CodeGenerator:
 
   Attribute:
     max_path_size -- maximum result path size
+    node_cost -- cost per node, in milimeters
     graphs -- list of graphs
 
   """
 
   def __init__(self, script):
     self.max_path_size = None
+    self.node_cost = 0
     self.graphs = []
 
     def set_max_path_size(n):
@@ -110,12 +112,18 @@ class CodeGenerator:
         raise ValueError("invalid max path size")
       self.max_path_size = int(n)
 
+    def set_node_cost(n):
+      if n < 0:
+        raise ValueError("invalid node cost value")
+      self.node_cost = int(n)
+
     def add_graph(name, nodes, vertices):
       self.graphs.append(Graph(name, nodes, vertices))
 
     script_globals = {}
     script_locals = {
       'set_max_path_size': set_max_path_size,
+      'set_node_cost': set_node_cost,
       'add_graph': add_graph,
     }
 
