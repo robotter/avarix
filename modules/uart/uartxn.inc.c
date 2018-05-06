@@ -49,9 +49,9 @@ _Static_assert(UART_ACTUAL_BAUDRATE/UARTXN(_BAUDRATE) < 1.01 &&
 
 
 /// FIFO buffer for received data
-static uint8_t uartXN(_rxbuf)[UARTXN(_RX_BUF_SIZE)];
+static uint8_t uartXN(_rxbuf)[UARTXN(_RX_BUF_SIZE)] AVARIX_DATA_NOINIT;
 /// FIFO buffer for sent data
-static uint8_t uartXN(_txbuf)[UARTXN(_TX_BUF_SIZE)];
+static uint8_t uartXN(_txbuf)[UARTXN(_TX_BUF_SIZE)] AVARIX_DATA_NOINIT;
 
 static uart_t uartXN_ = {
   .usart = &USARTXN(),

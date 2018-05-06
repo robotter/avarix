@@ -18,5 +18,12 @@
 
 //@}
 
+/** @brief Instruct to not 0-initialize a global variable
+ *
+ * Some global variables such as large buffers don't need to initialied.
+ * Not initializing them reduces program space.
+ */
+#define AVARIX_DATA_NOINIT   __attribute__ ((section (".noinit")))
+
 #endif
 //@}
