@@ -48,6 +48,11 @@ static bool obstacle_blocks_node(const pathfinding_obstacle_t *obstacle, const p
 static bool node_blocked(const pathfinding_t *finder, const pathfinding_node_t *a)
 {
   for(uint8_t i=0; i<finder->obstacles_size; i++) {
+    //ignore obstacles with null radius
+    if(finder->obstacles[i].r == 0) {
+      return false;
+    }
+
     if(obstacle_blocks_node(&finder->obstacles[i], a)) {
       return true;
     }
@@ -90,6 +95,11 @@ static bool obstacle_blocks_vertex(const pathfinding_obstacle_t *o, const pathfi
 static bool vertex_blocked(const pathfinding_t *finder, const pathfinding_node_t *a, const pathfinding_node_t *b)
 {
   for(uint8_t i=0; i<finder->obstacles_size; i++) {
+    //ignore obstacles with null radius
+    if(finder->obstacles[i].r == 0) {
+      return false;
+    }
+
     if(obstacle_blocks_vertex(&finder->obstacles[i], a, b)) {
       return true;
     }
