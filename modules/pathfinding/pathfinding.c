@@ -203,17 +203,19 @@ fail:
 
 uint8_t pathfinding_nearest_node(const pathfinding_t *finder, int16_t x, int16_t y)
 {
-  uint32_t dmin = 0xffff;
+  uint32_t dmin = 0xffffffff;
   uint8_t nearest = 0xff;
   for(uint8_t i=0; i<finder->nodes_size; i++) {
-    const int16_t sdx = finder->nodes[i].x - x;
-    const int16_t sdy = finder->nodes[i].y - y;
-    const uint32_t dx = sdx > 0 ? sdx : -sdx;
-    const uint32_t dy = sdy > 0 ? sdy : -sdy;
-    uint32_t d = dx*dx + dy*dy;
-    if(d < dmin) {
-      dmin = d;
-      nearest = i;
+    if(!(node_blocked(finder,&finder->nodes[i]))){
+      const int16_t sdx = finder->nodes[i].x - x;
+      const int16_t sdy = finder->nodes[i].y - y;
+      const uint32_t dx = sdx > 0 ? sdx : -sdx;
+      const uint32_t dy = sdy > 0 ? sdy : -sdy;
+      uint32_t d = dx*dx + dy*dy;
+      if(d < dmin) {
+        dmin = d;
+        nearest = i;
+      }
     }
   }
   return nearest;
