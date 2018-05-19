@@ -73,7 +73,14 @@ class CodeGenerator:
   def msgdata_union_fields(self):
     ret = ''
     for msg in self.messages:
-      fields = [ self.c_typedecl(t, v) + ';' for v,t in msg.ptypes ]
+      if msg.name == 'log':
+        # Using snprintf() on 0-sized array cause a warning on GCC 7.
+        # Use standard flexible array as a workaround.
+        # Note: we can't use them everywhere as they are not valid if alone in
+        # a struct.
+        fields = [ 'char %s[];' % v if v == 'msg' else self.c_typedecl(t, v) + ';' for v,t in msg.ptypes ]
+      else:
+        fields = [ self.c_typedecl(t, v) + ';' for v,t in msg.ptypes ]
       if isinstance(msg, rome.frame.Order):
         fields.insert(0, 'uint8_t _ack;')
       ret += '\n    struct {\n%s    } %s;\n' % (
