@@ -115,8 +115,8 @@ void pathfinding_search(pathfinding_t *finder, uint8_t start, uint8_t goal)
   struct {
     enum { PENDING, OPEN, CLOSED } state;
     uint8_t previous;  // most efficicient previous node (0xff for start)
-    uint32_t partial_cost;  // cost from start (squared distance)
-    uint32_t total_cost;  // estimated total cost (squared distance)
+    uint32_t partial_cost;  // cost from start (distance)
+    uint32_t total_cost;  // estimated total cost (distance)
   } astar_nodes[finder->nodes_size];
 
   // initialize astar_nodes
