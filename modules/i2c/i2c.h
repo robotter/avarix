@@ -84,9 +84,9 @@ void i2c_init(void);
  * @param  n  size to send (max: 127)
  * @param  data  buffer to send
  *
- * @retval -1  error before first byte has been sent
+ * @retval -1  bus error, arbitration lost or unknown error
  * @retval  0  NACK has been immediately received
- * @retval  n  size of sent data (even on error / NACK)
+ * @retval  n  size of sent data
  */
 int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n);
 

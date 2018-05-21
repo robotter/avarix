@@ -100,7 +100,9 @@ int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n)
   // slave address + Write bit (0)
   m->ADDR = addr << 1;
   while(!((status = m->STATUS) & (TWI_MASTER_RIF_bm|TWI_MASTER_WIF_bm))) ;
-  if(!(status & TWI_MASTER_WIF_bm)) {
+  if(status & (TWI_MASTER_ARBLOST_bm|TWI_MASTER_BUSERR_bm)) {
+    return -1;
+  } else if(!(status & TWI_MASTER_WIF_bm)) {
     return -1;
   } else if(status & TWI_MASTER_RXACK_bm) {
     // NACK
@@ -112,7 +114,9 @@ int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n)
   for(i=0; i<n; ) {
     m->DATA = data[i++];
     while(!((status = m->STATUS) & (TWI_MASTER_RIF_bm|TWI_MASTER_WIF_bm))) ;
-    if(!(status & TWI_MASTER_WIF_bm)) {
+    if(status & (TWI_MASTER_ARBLOST_bm|TWI_MASTER_BUSERR_bm)) {
+      return -1;
+    } else if(!(status & TWI_MASTER_WIF_bm)) {
       return -1;
     } else if(status & TWI_MASTER_RXACK_bm) {
       break;
