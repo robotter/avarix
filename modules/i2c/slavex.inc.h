@@ -8,12 +8,14 @@
  */
 #define i2cX(s) X_(i2c,s)
 
-
-/* I2cX Register callback */
-void i2cX(s_register_callback)( void (*process_data_function)(void));
-
 // I2cX singleton
 extern i2cs_t i2cX();
+
+void i2cX(s_register_send_callback)(i2cs_send_callback_t f);
+
+void i2cX(s_register_recv_callback)(i2cs_recv_callback_t f);
+
+void i2cX(s_register_reset_callback)(i2cs_reset_callback_t f);
 
 #undef i2cX
 #undef X_

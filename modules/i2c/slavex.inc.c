@@ -6,6 +6,7 @@
  * The X_(p,s) macro must be defined before including.
  * It is automatically undefined at the end of this file.
  */
+#include <avarix.h>
 #include <avr/interrupt.h>
 #include <stddef.h>
 
@@ -14,191 +15,180 @@
 #define TWIX X_(TWI,)
 #define twiX(s) X_(TWI,s)
 
-// i2cX singleton
+// declare i2cX singleton
 i2cs_t i2cX();
 
 void i2cX(_init)(void) {
-  i2cX().process_data = NULL;
-  i2cX().bytes_received = 0;
-  i2cX().bytes_transmit = 0;
-  i2cX().status = I2CS_STATUS_READY;
-  i2cX().result = I2CS_RESULT_UNKNOWN;
 
-  TWIX.SLAVE.CTRLA = (I2C_INTLVL<<TWI_SLAVE_INTLVL_gp) |
-                     TWI_SLAVE_DIEN_bm |
-                     TWI_SLAVE_APIEN_bm |
-                     TWI_SLAVE_ENABLE_bm;
-  TWIX.SLAVE.ADDR = (I2CX(_ADDRESS)<<1);
+  i2cX().state = I2CS_STATE_NONE;
+
+  i2cX().reset_callback = NULL;
+  i2cX().send_callback = NULL;
+  i2cX().recv_callback = NULL;
+
+  // initialize hardware
+  TWIX.SLAVE.CTRLA = TWI_SLAVE_ENABLE_bm
+    | TWI_SLAVE_APIEN_bm
+    | TWI_SLAVE_DIEN_bm
+    | TWI_SLAVE_PIEN_bm
+    | ((I2CX(_INTLVL) << TWI_SLAVE_INTLVL_gp) & TWI_SLAVE_INTLVL_gm);
+  TWIX.SLAVE.ADDR = I2CX(_ADDRESS) << 1;
 }
 
-
-// Register callback
-void i2cX(s_register_callback)( void (*process_data_function)(void) ) {
-  i2cX().process_data = process_data_function;
-}
-
-/* @brief I2C transaction finished function.
- *  Prepares module for new transaction.
- *  @bparam result The result of the transaction.
- */
-static void i2cX(_transaction_finished(uint8_t result)) {
-  i2cX().result = result;
-  i2cX().status = I2CS_STATUS_READY;
-}
-
-/* @brief i2c slave transmit interrupt handler.
- *  Handles i2c slave transmit transactions and responses.
- */
-static void i2cX(_transmit_handler(void)) {
-  /* If NACK, slave transmit transaction finished. */
-  if ((i2cX().bytes_transmit > 0) && (TWIX.SLAVE.STATUS &
-                                 TWI_SLAVE_RXACK_bm)) {
-
-    TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
-    i2cX(_transaction_finished(I2CS_RESULT_OK));
-  }
-  /* If ACK, master expects more data. */
-  else {
-    if (i2cX().bytes_transmit < I2CS_SEND_BUFFER_SIZE) {
-      uint8_t data = i2cX().transmit_data[i2cX().bytes_transmit];
-      TWIX.SLAVE.DATA = data;
-      i2cX().bytes_transmit++;
-      i2cX().result = I2CS_RESULT_TRANSMIT;
-
-      /* Send data, wait for data interrupt. */
-      TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-    }
-    /* If buffer overflow. */
-    else {
-      TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
-      i2cX(_transaction_finished(I2CS_RESULT_BUFFER_OVERFLOW));
-    }
+void i2cX(s_register_reset_callback)(i2cs_reset_callback_t f) {
+  INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
+    i2cX().reset_callback = f;
   }
 }
 
-/* @brief i2c slave recieve interrupt handler.
- *  Handles i2c slave recieve transactions and responses.
- */
-static void i2cX(_receive_handler(void)) {
-  /* Enable stop interrupt. */
-  uint8_t currentctrla = TWIX.SLAVE.CTRLA;
-  TWIX.SLAVE.CTRLA = currentctrla | TWI_SLAVE_PIEN_bm;
-
-  /* If free space in buffer. */
-  if (i2cX().bytes_received < I2CS_RECEIVE_BUFFER_SIZE) {
-    /* Fetch data */
-    uint8_t data = TWIX.SLAVE.DATA;
-    i2cX().received_data[i2cX().bytes_received] = data;
-
-    i2cX().bytes_received++;
-    i2cX().result = I2CS_RESULT_RECEIVED;
-
-    TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-  }
-  /* If buffer overflow, send NACK and wait for next START. Set
-   * result buffer overflow.
-   */
-  else {
-    TWIX.SLAVE.CTRLB = TWI_SLAVE_ACKACT_bm |
-      TWI_SLAVE_CMD_COMPTRANS_gc;
-    i2cX(_transaction_finished(I2CS_RESULT_BUFFER_OVERFLOW));
+void i2cX(s_register_recv_callback)(i2cs_recv_callback_t f) {
+  INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
+    i2cX().recv_callback = f;
   }
 }
 
-/* @brief i2c address match interrupt handler.
- *  Prepares i2c module for transaction when an address match occures.
- */
-static void i2cX(_address_match_handler(void)) {
-  i2cX().status = I2CS_STATUS_BUSY;
-  i2cX().result = I2CS_RESULT_UNKNOWN;
-  i2cX().bytes_received = 0;
-  i2cX().bytes_transmit = 0;
-
-  /* Disable stop interrupt. */
-  uint8_t currentctrla = TWIX.SLAVE.CTRLA;
-  TWIX.SLAVE.CTRLA = currentctrla & ~TWI_SLAVE_PIEN_bm;
-
-  /* Send ACK, wait for data interrupt. */
-  TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-}
-
-
-/* @brief I2C stop condition interrupt handler.
- *  @bparam i2c The i2cs_t struct instance.
- */
-static void i2cX(_stop_handler(void)) {
-  /* Disable stop interrupt. */
-  uint8_t currentctrla = TWIX.SLAVE.CTRLA;
-  TWIX.SLAVE.CTRLA = currentctrla & ~TWI_SLAVE_PIEN_bm;
-
-  /* Clear APIF, according to flowchart don't ACK or NACK */
-  uint8_t currentStatus = TWIX.SLAVE.STATUS;
-  TWIX.SLAVE.STATUS = currentStatus | TWI_SLAVE_APIF_bm;
-
-  i2cX(_transaction_finished(I2CS_RESULT_OK));
-
-}
-
-/* @brief i2c data interrupt handler.
- *  Calls the appropriate slave receive or transmit handler.
- */
-static void i2cX(_data_handler(void)) {
-  if (TWIX.SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
-    i2cX(_transmit_handler());
-  } else {
-    i2cX(_receive_handler());
+void i2cX(s_register_send_callback)(i2cs_send_callback_t f) {
+  INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
+    i2cX().send_callback = f;
   }
 }
 
 // Interrupt handler
 ISR(twiX(_TWIS_vect)) {
-  uint8_t current_status = TWIX.SLAVE.STATUS;
 
-  /* If bus error. */
-  if (current_status & TWI_SLAVE_BUSERR_bm) {
-    i2cX().bytes_received = 0;
-    i2cX().bytes_transmit = 0;
-    i2cX().result = I2CS_RESULT_BUS_ERROR;
-    i2cX().status = I2CS_STATUS_READY;
+  i2cs_t *i2cs = &i2cX();
+
+  uint8_t status = TWIX.SLAVE.STATUS;
+
+  if(status & TWI_SLAVE_BUSERR_bm) {
+    // bus error happened
+    i2cs->state = I2CS_STATE_NONE;
+    if(i2cs->reset_callback)
+      i2cs->reset_callback();
+    return;
   }
 
-  /* If transmit collision. */
-  else if (current_status & TWI_SLAVE_COLL_bm) {
-    i2cX().bytes_received = 0;
-    i2cX().bytes_transmit = 0;
-    i2cX().result = I2CS_RESULT_TRANSMIT_COLLISION;
-    i2cX().status = I2CS_STATUS_READY;
+  else if(status & TWI_SLAVE_COLL_bm) {
+    // collision happened
+    i2cs->state = I2CS_STATE_NONE;
+    if(i2cs->reset_callback)
+      i2cs->reset_callback();
+    return;
   }
 
-  /* If address match. */
-  else if ((current_status & TWI_SLAVE_APIF_bm) &&
-           (current_status & TWI_SLAVE_AP_bm)) {
-    i2cX(_address_match_handler());
-    /* Process data. */
-    if(i2cX().process_data != NULL)
-      i2cX().process_data();
+  else if(status & TWI_SLAVE_APIF_bm) {
+    // address / stop interrupt
+
+    // check previous state, call recvd callback
+    // if previous frame was a master-write
+    if(i2cs->state == I2CS_STATE_WRITE) {
+      if(i2cs->recv_callback) {
+        i2cs->recv_callback(i2cs->recv_buffer, i2cs->recvd_bytes);
+      }
+    }
+
+    if(status & TWI_SLAVE_AP_bm) {
+      // valid address interrupt
+      if(status & TWI_SLAVE_DIR_bm) {
+        // master read operation
+
+        i2cs->state = I2CS_STATE_READ;
+        if(i2cs->send_callback) {
+
+          i2cs->sent_bytes = 0;
+
+          // ask user to provision send buffer
+          int rsz = i2cs->send_callback(i2cs->send_buffer,
+                                          sizeof(i2cs->send_buffer));
+          if(rsz > 0) {
+            // user got some data to send
+            i2cs->bytes_to_send = MIN(rsz,I2CS_SEND_BUFFER_SIZE);
+            // ACK
+            TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+            return;
+          }
+          i2cs->bytes_to_send = 0;
+        }
+
+        // NACK, refuse read
+        TWIX.SLAVE.CTRLB = TWI_SLAVE_ACKACT_bm | TWI_SLAVE_CMD_RESPONSE_gc;
+        return;
+      }
+      else {
+        // master write operation
+        i2cs->state = I2CS_STATE_WRITE;
+
+        // clear recv buffer
+        i2cs->recvd_bytes = 0;
+        // confirm operation
+        TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+      }
+      return;
+    }
+    else {
+      // STOP condition interrupt
+      TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
+
+      i2cs->state = I2CS_STATE_NONE;
+      if(i2cs->reset_callback)
+        i2cs->reset_callback();
+      return;
+    }
   }
 
-  /* If stop (only enabled through slave receive transaction). */
-  else if (current_status & TWI_SLAVE_APIF_bm) {
-    i2cX(_stop_handler());
-    /* Process data. */
-    if(i2cX().process_data != NULL)
-      i2cX().process_data();
+  else if(status & TWI_SLAVE_DIF_bm) {
+    // data interruption
+    if(status & TWI_SLAVE_DIR_bm) {
+      // master read operation
+
+      if(i2cs->sent_bytes > 0 && (status & TWI_SLAVE_RXACK_bm)) {
+        // previous byte was NACKed by master
+        TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
+        i2cs->state = I2CS_STATE_NONE;
+        return;
+      }
+
+      if(i2cs->sent_bytes < i2cs->bytes_to_send)  {
+        // push byte
+        uint8_t byte = i2cs->send_buffer[i2cs->sent_bytes++];
+        TWIX.SLAVE.DATA = byte;
+
+        // ACK read, continue transmission
+        TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+      }
+      else {
+        // ACK read, end transmission
+        TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
+      }
+
+      return;
+    }
+    else {
+      // master write operation
+      uint8_t byte = TWIX.SLAVE.DATA;
+
+      if(i2cs->recvd_bytes < I2CS_RECV_BUFFER_SIZE) {
+        i2cs->recv_buffer[i2cs->recvd_bytes++] = byte;
+
+        // ACK write
+        TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+      }
+      else {
+        // NACK write, buffer is full
+        TWIX.SLAVE.CTRLB = TWI_SLAVE_ACKACT_bm | TWI_SLAVE_CMD_COMPTRANS_gc;
+      }
+
+      return;
+    }
   }
 
-  /* If data interrupt. */
-  else if (current_status & TWI_SLAVE_DIF_bm) {
-    i2cX(_data_handler());
-    /* Process data. */
-    if(i2cX().process_data != NULL)
-      i2cX().process_data();
-  }
-
-  /* If unexpected state. */
-  else {
-    i2cX(_transaction_finished(I2CS_RESULT_FAIL));
-  }
+  // we encounter an unmanaged case
+  i2cs->state = I2CS_STATE_NONE;
+  i2cs->recvd_bytes = 0;
+  i2cs->sent_bytes = 0;
+  // reset client-side state
+  if(i2cs->reset_callback)
+    i2cs->reset_callback();
 }
 
 #undef I2CX

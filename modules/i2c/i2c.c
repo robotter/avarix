@@ -151,5 +151,9 @@ int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n)
   return i;
 }
 
+int8_t i2cs_send_async(i2cs_t *s, uint8_t *data, uint8_t n) {
+
+  return 0;
+}
 
 ///@endcond

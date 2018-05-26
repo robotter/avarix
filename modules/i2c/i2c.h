@@ -13,8 +13,6 @@
 #include <avarix/intlvl.h>
 #include <stdint.h>
 #include "i2c_config.h"
-#include "i2cs.h"
-
 
 #ifdef DOXYGEN
 
@@ -26,6 +24,48 @@ typedef struct i2cs_struct i2cs_t;
 #else
 
 typedef struct TWI_MASTER_struct i2cm_t;
+
+typedef enum {
+  I2CS_STATE_NONE,
+  I2CS_STATE_READ,
+  I2CS_STATE_WRITE,
+
+} i2cs_state_t;
+
+#ifndef I2CS_RECV_BUFFER_SIZE
+#define I2CS_RECV_BUFFER_SIZE 32
+#endif
+
+#ifndef I2CS_SEND_BUFFER_SIZE
+#define I2CS_SEND_BUFFER_SIZE 32
+#endif
+
+struct i2cs;
+
+typedef void (*i2cs_recv_callback_t)(uint8_t *data, int n);
+
+typedef int (*i2cs_send_callback_t)(uint8_t *data, int n);
+
+typedef void (*i2cs_reset_callback_t)(void);
+
+typedef struct i2cs {
+
+  i2cs_state_t state;
+
+  int recvd_bytes;
+  uint8_t recv_buffer[I2CS_RECV_BUFFER_SIZE];
+
+  int sent_bytes;
+  int bytes_to_send;
+  uint8_t send_buffer[I2CS_SEND_BUFFER_SIZE];
+
+  i2cs_recv_callback_t recv_callback;
+
+  i2cs_send_callback_t send_callback;
+
+  i2cs_reset_callback_t reset_callback;
+
+} i2cs_t;
 
 // Check for I2C enabled as both master and slave
 // Define pointers to internal structures
@@ -103,7 +143,6 @@ int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n);
  * @retval  n  size of sent data
  */
 int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n);
-
 
 #endif
 //@}
