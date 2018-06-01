@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include "i2c_config.h"
 
+
 #ifdef DOXYGEN
 
 /// I2C master state
@@ -161,6 +162,7 @@ int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n);
  * @retval  n  size of sent data
  */
 int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n);
+
 
 #endif
 //@}

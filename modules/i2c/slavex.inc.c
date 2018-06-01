@@ -18,7 +18,8 @@
 // declare i2cX singleton
 i2cs_t i2cX();
 
-void i2cX(_init)(void) {
+void i2cX(_init)(void)
+{
 
   i2cX().state = I2CS_STATE_NONE;
 
@@ -35,26 +36,30 @@ void i2cX(_init)(void) {
   TWIX.SLAVE.ADDR = I2CX(_ADDRESS) << 1;
 }
 
-void i2cX(s_register_reset_callback)(i2cs_reset_callback_t f) {
+void i2cX(s_register_reset_callback)(i2cs_reset_callback_t f)
+{
   INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
     i2cX().reset_callback = f;
   }
 }
 
-void i2cX(s_register_recv_callback)(i2cs_recv_callback_t f) {
+void i2cX(s_register_recv_callback)(i2cs_recv_callback_t f)
+{
   INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
     i2cX().recv_callback = f;
   }
 }
 
-void i2cX(s_register_prepare_send_callback)(i2cs_prepare_send_callback_t f) {
+void i2cX(s_register_prepare_send_callback)(i2cs_prepare_send_callback_t f)
+{
   INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
     i2cX().prepare_send_callback = f;
   }
 }
 
 // Interrupt handler
-ISR(twiX(_TWIS_vect)) {
+ISR(twiX(_TWIS_vect))
+{
 
   i2cs_t *i2cs = &i2cX();
 
@@ -63,8 +68,9 @@ ISR(twiX(_TWIS_vect)) {
   if(status & TWI_SLAVE_BUSERR_bm || status & TWI_SLAVE_COLL_bm) {
     // bus error happened
     i2cs->state = I2CS_STATE_NONE;
-    if(i2cs->reset_callback)
+    if(i2cs->reset_callback) {
       i2cs->reset_callback();
+    }
     return;
   }
 
@@ -122,8 +128,9 @@ ISR(twiX(_TWIS_vect)) {
       TWIX.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
 
       i2cs->state = I2CS_STATE_NONE;
-      if(i2cs->reset_callback)
+      if(i2cs->reset_callback) {
         i2cs->reset_callback();
+      }
       return;
     }
   }
@@ -179,8 +186,9 @@ ISR(twiX(_TWIS_vect)) {
   i2cs->recvd_bytes = 0;
   i2cs->sent_bytes = 0;
   // reset client-side state
-  if(i2cs->reset_callback)
+  if(i2cs->reset_callback) {
     i2cs->reset_callback();
+  }
 }
 
 #undef I2CX
