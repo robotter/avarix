@@ -22,13 +22,69 @@ typedef struct i2cm_struct i2cm_t;
 /// I2C slave state
 typedef struct i2cs_struct i2cs_t;
 
-/// State of i2cx
-extern i2cT_t *const i2cx;
-
 #else
 
 typedef struct TWI_MASTER_struct i2cm_t;
-typedef struct i2cs_struct i2cs_t;
+
+typedef enum {
+  I2CS_STATE_NONE,
+  I2CS_STATE_READ,
+  I2CS_STATE_WRITE,
+
+} i2cs_state_t;
+
+#ifndef I2CS_RECV_BUFFER_SIZE
+# define I2CS_RECV_BUFFER_SIZE  32
+#endif
+
+#ifndef I2CS_SEND_BUFFER_SIZE
+# define I2CS_SEND_BUFFER_SIZE  32
+#endif
+
+/** @brief I2C slave master-write frame received
+ *
+ * @param buffer buffer containing the received bytes
+ * @param n number of bytes received from master
+ *
+ * This function is called when a master-write operation has completed
+ */
+typedef void (*i2cs_recv_callback_t)(uint8_t *buffer, uint8_t n);
+
+/** @brief I2C slave master-read operation was requested
+ *
+ * @param buffer buffer to provision
+ * @param maxsz maximum number of bytes which can be written to buffer
+ * @return number of bytes to send, returning 0 will result in a NACK from slave.
+ *
+ * This function is called when a master-read operation was requested by master
+ * and ask user to provision the buffer which will be sent.
+ */
+typedef uint8_t (*i2cs_prepare_send_callback_t)(uint8_t *buffer, uint8_t maxsz);
+
+/** @brief I2C slave transaction finished successfully or not
+ *
+ * This function is called when a STOP condition or any bus error has ended current transaction
+ */
+typedef void (*i2cs_reset_callback_t)(void);
+
+typedef struct {
+
+  i2cs_state_t state;
+
+  uint8_t recvd_bytes;
+  uint8_t recv_buffer[I2CS_RECV_BUFFER_SIZE];
+
+  uint8_t sent_bytes;
+  uint8_t bytes_to_send;
+  uint8_t send_buffer[I2CS_SEND_BUFFER_SIZE];
+
+  i2cs_recv_callback_t recv_callback;
+
+  i2cs_prepare_send_callback_t prepare_send_callback;
+
+  i2cs_reset_callback_t reset_callback;
+
+} i2cs_t;
 
 // Check for I2C enabled as both master and slave
 // Define pointers to internal structures
@@ -42,7 +98,8 @@ typedef struct i2cs_struct i2cs_t;
 #elif (defined I2CC_MASTER)
 # define i2cC  (&TWIC.MASTER)
 #elif (defined I2CC_SLAVE)
-extern i2cs_t *const i2cC;
+# define X_(p,s)  p ## C ## s
+# include "slavex.inc.h"
 #endif
 
 #if (defined I2CD_MASTER) && (defined I2CD_SLAVE)
@@ -50,7 +107,8 @@ extern i2cs_t *const i2cC;
 #elif (defined I2CD_MASTER)
 # define i2cD  (&TWID.MASTER)
 #elif (defined I2CD_SLAVE)
-extern i2cs_t *const i2cD;
+# define X_(p,s)  p ## D ## s
+# include "slavex.inc.h"
 #endif
 
 #if (defined I2CE_MASTER) && (defined I2CE_SLAVE)
@@ -58,7 +116,8 @@ extern i2cs_t *const i2cD;
 #elif (defined I2CE_MASTER)
 # define i2cE  (&TWIE.MASTER)
 #elif (defined I2CE_SLAVE)
-extern i2cs_t *const i2cE;
+# define X_(p,s)  p ## E ## s
+# include "slavex.inc.h"
 #endif
 
 #if (defined I2CF_MASTER) && (defined I2CF_SLAVE)
@@ -66,7 +125,8 @@ extern i2cs_t *const i2cE;
 #elif (defined I2CF_MASTER)
 # define i2cF  (&TWIF.MASTER)
 #elif (defined I2CF_SLAVE)
-extern i2cs_t *const i2cF;
+# define X_(p,s)  p ## F ## s
+# include "slavex.inc.h"
 #endif
 
 #endif

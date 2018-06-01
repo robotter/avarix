@@ -151,5 +151,4 @@ int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n)
   return i;
 }
 
-
 ///@endcond

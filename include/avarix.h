@@ -12,7 +12,8 @@
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 /// Clamp a value to range [x;y]
 #define CLAMP(v,x,y) ((v) < (x) ? (x) : (v) > (y) ? (y) : (v))
-
+/// Get number of elements in an array
+#define LENGTHOF(a) ((sizeof(a)/sizeof((a)[0]))/(sizeof(a)%sizeof((a)[0]) == 0))
 
 #endif
 //@}
