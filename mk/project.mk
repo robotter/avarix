@@ -54,7 +54,13 @@ DEPS = $(COBJS:.o=.d)
 GEN_FILES_FULL = $(addprefix $(gen_dir)/,$(GEN_FILES))
 PROJECT_MODULES_LIBS = $(foreach m,$(PROJECT_MODULES_PATHS),$(obj_dir)/$(m).$(HOST).a)
 PROJECT_LIB = $(obj_dir)/$(TARGET).$(HOST).a
-LINKER_SCRIPT = $(AVARIX_DIR)/mk/avarix.ld
+LINKER_SCRIPT ?= $(AVARIX_DIR)/mk/avarix.ld
+
+# don't use special sections if gcc's default linker script is used
+ifneq ($(LINKER_SCRIPT),)
+export use_avarix_sections := yes
+endif
+
 
 ## Programs and commands
 
@@ -240,7 +246,9 @@ $(TARGET_OBJ): $(PROJECT_MODULES_LIBS) $(PROJECT_LIB)
 # project objects, with renamed sections
 $(PROJECT_LIB): $(OBJS)
 	$(AR) rs $@ $(OBJS) 2>/dev/null
+ifneq ($(use_avarix_sections),)
 	$(OBJCOPY) --prefix-alloc-sections .avarix.project $@
+endif
 
 size:
 	@$(SIZE) $(TARGET_OBJ)
