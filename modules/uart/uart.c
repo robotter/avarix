@@ -171,6 +171,13 @@ int uart_send_nowait(uart_t *u, uint8_t v)
   return ret;
 }
 
+void uart_send_buf(uart_t *u, const uint8_t buf[], uint8_t len)
+{
+  for(uint8_t i=0; i<len; ++i) {
+    uart_send(u, buf[i]);
+  }
+}
+
 void uart_send_buf_byte(uart_t *u)
 {
   if( uart_buf_empty(&u->txbuf) ) {

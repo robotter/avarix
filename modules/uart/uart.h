@@ -174,6 +174,10 @@ int uart_send(uart_t *u, uint8_t v);
  */
 int uart_send_nowait(uart_t *u, uint8_t v);
 
+/** @brief Send a buffer
+ */
+void uart_send_buf(uart_t *u, const uint8_t buf[], uint8_t len);
+
 
 /** @brief Open an UART as a standard stream
  *
