@@ -2,15 +2,14 @@
  * @brief ROME module
  *
  * ROME is a communication protocol. This module handles ROME communications
- * through UART.
+ * through UART or XBee API.
  *
- * The following things are needed to use ROME:
- *  - define and implement a \ref rome_handler_t "frame handler"
- *  - initialize a \ref rome_intf_t "ROME interface"
- *  - call rome_intf_update() regularly to process input data
+ *  - When using UART, frames are read using a \ref rome_reader_t and \ref
+ *    rome_reader_read().
+ *  - When using XBee API, frames can be parsed using \ref rome_parse_frame().
  *
- * The frame handler is set on the interface and called when a valid frame
- * has been received.
+ * In both cases, frames can be sent using the appropriated `rome_send_*()`
+ * method or one of the `ROME_SEND_*()` helpers.
  *
  * @par Orders and ACKs
  *
@@ -43,60 +42,108 @@
 #include <uart/uart.h>
 #include "rome_config.h"
 #include "rome/rome_msg.h"
-
-
-#ifdef DOXYGEN
-// Doxygen trick to have the typedef name for struct documentation
-/** @cond skip */
-#define rome_intf_struct rome_intf_t
-/** @endcond */
+#ifdef ROME_ENABLE_XBEE_API
+#include <xbee/xbee.h>
 #endif
 
-typedef struct rome_intf_struct rome_intf_t;
 
-
-/// Frame handler, process received ROME messages
-typedef void rome_handler_t(rome_intf_t *intf, const rome_frame_t *frame);
-
-
-/// State of frame being received on an interface
+/// Read a frame from an UART, keep current reading state
 typedef struct {
-  /// frame data
+  uart_t *uart;  ///< UART interface used to read the frame
+  uint8_t pos;  ///< number of received bytes for the current frame
+  /// Frame being read
   union {
     rome_frame_t frame;
     uint8_t buf[sizeof(rome_frame_t)];
   };
-  uint8_t pos;  ///< number of received bytes for the current frame
-  uint16_t crc;  ///< computed CRC
 
-} rome_rstate_t;
+} rome_reader_t;
 
-/// ROME interface
-struct rome_intf_struct {
-  uart_t *uart;  ///< UART used by the interface
-  rome_handler_t *handler;  ///< frame handler
-  rome_rstate_t rstate;  ///< state of frame being received (internal)
-};
+/// Initialize a frame reader
+void rome_reader_init(rome_reader_t *reader, uart_t *uart);
 
-
-/** @brief Initialize an interface
+/** @brief Process input data for a frame reader
  *
- * The \ref rome_intf_t::uart "uart" field must be set before using the
- * interface. The \ref rome_intf_t::handler "handler" field should be set too.
+ * Return a pointer to the read frame or NULL if no frame has been received.
  */
-void rome_intf_init(rome_intf_t *intf);
+rome_frame_t *rome_reader_read(rome_reader_t *reader);
 
-/** @brief Process input data on an interface
+
+/** @brief Parse a single frame from a buffer
  *
- * The frame handler is called for each received frame.
+ * If the buffer contains exactly a valid frame, return a pointer to this
+ * frame. Otherwise, return NULL.
+ *
+ * @note The returned pointer is bounded to \a data.
  */
-void rome_handle_input(rome_intf_t *intf);
+const rome_frame_t *rome_parse_frame(const uint8_t data[], uint8_t len);
 
-/// Send a frame on an interface
-void rome_send(rome_intf_t *intf, const rome_frame_t *frame);
+/// Set frame's start byte and CRC from its payload
+void rome_finalize_frame(rome_frame_t *frame);
+
+/** Send a frame to an UART
+ *
+ * The frame must have been finalized (see rome_finalize_frame()).
+ */
+void rome_send_uart(uart_t *uart, const rome_frame_t *frame);
+
+# ifdef ROME_ENABLE_XBEE_API
+
+/** Send a frame to an XBee address
+ *
+ * The frame must have been finalized (see rome_finalize_frame()).
+ */
+void rome_send_xbee(xbee_intf_t *xbee, uint16_t addr, const rome_frame_t *frame);
+
+/** Broadcast a frame to an XBee interface
+ *
+ * The frame must have been finalized (see rome_finalize_frame()).
+ */
+inline void rome_send_xbee_broadcast(xbee_intf_t *xbee, const rome_frame_t *frame)
+{
+  rome_send_xbee(xbee, XBEE_BROADCAST, frame);
+}
+
+/// ROME destination for a specific XBee address
+typedef struct {
+  xbee_intf_t *xbee;
+  uint16_t addr;
+} rome_xbee_dst_t;
+
+/// Return a rome_xbee_dst_t for an XBee and address
+#define ROME_XBEE_DST(xbee,addr)  ((rome_xbee_dst_t){ (xbee), (addr) })
+
+/// Send a frame to an XBee destination
+inline void rome_send_xbee_dst(rome_xbee_dst_t dst, const rome_frame_t *frame)
+{
+  rome_send_xbee(dst.xbee, dst.addr, frame);
+}
+
+#endif
+
+#ifdef DOXYGEN
+
+/// Generic macro to send a frame
+# define rome_send(dst, frame)
+
+#else
+
+# ifdef ROME_ENABLE_XBEE_API
+#  define rome_send(dst, frame) \
+    _Generic((dst) \
+             , uart_t*: rome_send_uart \
+             , xbee_intf_t*: rome_send_xbee_broadcast \
+             , rome_xbee_dst_t: rome_send_xbee_dst \
+             )(dst, frame)
+# else
+#  define rome_send  rome_send_uart
+# endif
+
+#endif
+
 
 /// Reply to a frame with a ACK message
-void rome_reply_ack(rome_intf_t *intf, const rome_frame_t *frame);
+#define rome_reply_ack(intf, frame)  ROME_SEND_ACK((intf), (frame)->_data[0])
 
 #if (defined DOXYGEN) || (defined ROME_ACK_MIN)
 
@@ -125,12 +172,42 @@ bool rome_ack_expected(uint8_t ack);
 /// Free an ACK value
 void rome_free_ack(uint8_t ack);
 
-/** @brief Send a frame until an ACK is received
+/** @brief Send a frame over UART until an ACK is received
  *
  * The frame must be an order frame.
  * Frame's ACK value is updated before sending.
  */
-void rome_sendwait(rome_intf_t *intf, rome_frame_t *frame);
+void rome_sendwait_uart(uart_t *uart, rome_frame_t *frame);
+
+#ifdef ROME_ENABLE_XBEE_API
+
+/** @brief Send a frame to an XBee address until an ACK is received
+ *
+ * The frame must be an order frame.
+ * Frame's ACK value is updated before sending.
+ */
+void rome_sendwait_xbee_dst(rome_xbee_dst_t dst, rome_frame_t *frame);
+
+#endif
+
+#ifdef DOXYGEN
+
+/// Generic macro to send a frame until an ACK is received
+#define rome_sendwait(dst, frame)
+
+#else
+
+# ifdef ROME_ENABLE_XBEE_API
+#  define rome_sendwait(dst, frame) \
+    _Generic((dst) \
+             , uart_t*: rome_sendwait_uart \
+             , rome_xbee_dst_t: rome_sendwait_xbee_dst \
+             )(dst, frame)
+# else
+#  define rome_sendwait  rome_sendwait_uart
+# endif
+
+#endif
 
 #endif
 

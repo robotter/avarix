@@ -90,9 +90,9 @@ class CodeGenerator:
     return ret
 
   def max_param_size(self):
-    # always use the maximum value
-    # the log message will always "force" this
-    return 255
+    # Use the "maximum" value but keep a margin to ensure that a whole
+    # rome_frame_t fits in 254 bytes.
+    return 254 - (1 + 2 + 2)
 
   @classmethod
   def msg_macro_helper(cls, msg):
@@ -133,9 +133,10 @@ class CodeGenerator:
         '} while(0)\n'
         '\n'
         '#define ROME_SEND_%(NAME)s(_i%(param_ack)s%(pnames)s) do { \\\n'
-        '  uint8_t _buf_[2+%(plsize)s%(extrasize)s]; \\\n'
+        '  uint8_t _buf_[3+%(plsize)s%(extrasize)s+2]; \\\n'
         '  rome_frame_t *_frame_ = (rome_frame_t*)_buf_; \\\n'
         '  ROME_SET_%(NAME)s(_frame_%(paren_ack)s%(paren_pnames)s); \\\n'
+        '  rome_finalize_frame(_frame_); \\\n'
         '  rome_send((_i), _frame_); \\\n'
         '} while(0)\n'
         '\n'
@@ -145,7 +146,7 @@ class CodeGenerator:
       tpl += (
           '#ifdef ROME_ACK_MIN\n'
           '#define ROME_SENDWAIT_%(NAME)s(_i%(pnames)s) do { \\\n'
-          '  uint8_t _buf_[2+%(plsize)s%(extrasize)s]; \\\n'
+          '  uint8_t _buf_[3+%(plsize)s%(extrasize)s+2]; \\\n'
           '  rome_frame_t *_frame_ = (rome_frame_t*)_buf_; \\\n'
           '  ROME_SET_%(NAME)s(_frame_, 0%(paren_pnames)s); \\\n'
           '  rome_sendwait((_i), _frame_); \\\n'

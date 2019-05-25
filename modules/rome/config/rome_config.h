@@ -7,6 +7,11 @@
  */
 //@{
 
+/** @brief If set, enable use of interface based on XBee API
+ *
+ * @note The \e xbee module must be enabled by the user.
+ */
+#undef ROME_ENABLE_XBEE_API
 
 /** @brief Disabled interrupt level when sending ROME frames
  *
@@ -14,6 +19,8 @@
  * will be mixed up.
  * If this value is set, ROME frames can be safely sent from any interrupt of
  * configured (or lower) level.
+ *
+ * @note This is not used for data sent using XBee API.
  *
  * @sa ROME_SEND_INTLVL_DISABLE()
  */

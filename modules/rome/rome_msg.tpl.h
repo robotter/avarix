@@ -47,6 +47,7 @@ typedef enum {
 
 /// ROME frame
 typedef struct {
+  uint8_t start;  ///< start byte
   uint8_t plsize;  ///< length of payload data
   uint8_t mid; ///< message ID
   union {
@@ -62,6 +63,7 @@ typedef struct {
       uint16_t x;
     } fake;
   };
+  uint16_t _filler;  ///< reserve bytes for CRC
 } __attribute__((__packed__)) rome_frame_t;
 
 #else
@@ -73,13 +75,17 @@ typedef enum {
 #pragma avarix_tpl self.enum_types()
 
 typedef struct {
+  uint8_t start;
   uint8_t plsize;
   uint8_t mid;
   union {
     uint8_t _data[$$avarix:self.max_param_size()$$];
 #pragma avarix_tpl self.msgdata_union_fields()
   };
+  uint16_t _filler;
 } __attribute__((__packed__)) rome_frame_t;
+
+_Static_assert(sizeof(rome_frame_t) < 255, "frame's size should be strictly less than 255");
 
 #endif
 
@@ -96,25 +102,25 @@ typedef struct {
  *
  * \e msg must be a literal string.
  */
-#define ROME_LOG(intf, sev, msg)
+#define ROME_LOG(dst, sev, msg)
 
 /// Send a formatted log message
-#define ROME_LOGF(intf, sev, fmt, ...)
+#define ROME_LOGF(dst, sev, fmt, ...)
 
 /// Set data of a dummy message frame
 #define ROME_SET_DUMMY(frame, a, b)
 
 /// Send a dummy message
-#define ROME_SEND_DUMMY(intf, a, b)
+#define ROME_SEND_DUMMY(dst, a, b)
 
 /// Set data of a fake order frame
 #define ROME_SET_FAKE(frame, _ack, x)
 
 /// Send a fake order
-#define ROME_SEND_FAKE(intf, _ack, x)
+#define ROME_SEND_FAKE(dst, _ack, x)
 
 /// Send a fake order until an ACK is received
-#define ROME_SENDWAIT_FAKE(intf, x)
+#define ROME_SENDWAIT_FAKE(dst, x)
 
 /// Return maximum size of a variable-size field
 #define ROME_MAX_FIELD_SIZE(msg, field)
@@ -133,22 +139,23 @@ typedef struct {
    (((_frame)->plsize - (size_t)((rome_frame_t*)0)->_msg._field + 2)/sizeof(*((rome_frame_t*)0)->_msg._field))
 
 #define ROME_LOG(_i, _sev, _msg) do { \
-  uint8_t _buf_[2 + 1 + sizeof(_msg)-1]; \
+  uint8_t _buf_[3 + 1 + sizeof(_msg)-1 + 2]; \
   rome_frame_t *_frame_ = (rome_frame_t*)_buf_; \
   _frame_->plsize = 1 + sizeof(_msg)-1; \
   _frame_->mid = ROME_MID_LOG; \
   _frame_->log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
   memcpy(_frame_->log.msg, (_msg), sizeof(_msg)-1); \
+  rome_finalize_frame(_frame_); \
   rome_send((_i), _frame_); \
 } while(0)
 
-/// Send a formatted log message
 #define ROME_LOGF(_i, _sev, _fmt, ...) do { \
   rome_frame_t _frame_; \
   int _n_ = snprintf(_frame_.log.msg, ROME_MAX_FIELD_SIZE(log, msg)-1, (_fmt), ##__VA_ARGS__); \
   _frame_.plsize = 1 + (_n_ <= (int)ROME_MAX_FIELD_SIZE(log, msg) ? _n_ : (int)ROME_MAX_FIELD_SIZE(log, msg)); \
   _frame_.mid = ROME_MID_LOG; \
   _frame_.log.sev = ROME_ENUM_LOG_SEVERITY_##_sev; \
+  rome_finalize_frame(&_frame_); \
   rome_send((_i), &_frame_); \
 } while(0)
 
