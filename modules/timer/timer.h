@@ -193,6 +193,14 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch);
 #define TIMER_SET_CALLBACK_US(xn,ch,us,intlvl,cb) \
     timer_set_callback(AVARIX_EVALCONCAT2(timer,xn), (ch), TIMER_US_TO_TICKS(xn,(us)), (intlvl), (cb))
 
+/** @brief Clear a callback
+ *
+ * This is equivalent to a call to \ref timer_clear_callback() except that timer
+ * is provided in the XN form.
+ */
+#define TIMER_CLEAR_CALLBACK(xn,ch) \
+    timer_clear_callback(AVARIX_EVALCONCAT2(timer,xn), (ch));
+
 
 /// Convert microseconds to timer ticks
 #define TIMER_US_TO_TICKS(xn,us)  (((float)(us) * (CLOCK_PER_FREQ)) / ((AVARIX_EVALCONCAT3(TIMER,xn,_PRESCALER_DIV)) * 1000000UL))
