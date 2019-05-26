@@ -68,6 +68,14 @@ void rome_reader_init(rome_reader_t *reader, uart_t *uart);
  */
 rome_frame_t *rome_reader_read(rome_reader_t *reader);
 
+//// Process input data for a reader, handle all frames using given handler
+#define rome_reader_handle_input(reader, handler) do { \
+  rome_frame_t *frame; \
+  while((frame = rome_reader_read(reader))) { \
+    handler(frame); \
+  } \
+} while(0)
+
 
 /** @brief Parse a single frame from a buffer
  *
