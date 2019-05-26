@@ -120,15 +120,14 @@ class CodeGenerator:
     def add_graph(name, nodes, vertices):
       self.graphs.append(Graph(name, nodes, vertices))
 
-    script_globals = {}
-    script_locals = {
+    script_globals = {
       'set_max_path_size': set_max_path_size,
       'set_node_cost': set_node_cost,
       'add_graph': add_graph,
     }
 
     with open(script) as f:
-      exec(f.read(), script_globals, script_locals)
+      exec(f.read(), script_globals)
     if self.max_path_size is None:
       raise ValueError("max path size must be set in config script")
     if not self.graphs:
