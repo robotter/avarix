@@ -73,7 +73,7 @@ uint8_t pathfinding_nearest_node(const pathfinding_t *finder, int16_t x, int16_t
 /// Set nodes of a given graph to a pathfinding_t object
 #define pathfinding_set_nodes(finder, name)  do { \
   (finder)->nodes = name ## _nodes; \
-  (finder)->nodes_size = sizeof(name ## _nodes) / sizeof(pathfinding_node_t); \
+  (finder)->nodes_size = ARRAY_LEN(name ## _nodes); \
 } while(0)
 
 #endif
