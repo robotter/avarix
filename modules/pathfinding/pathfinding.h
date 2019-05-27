@@ -29,6 +29,7 @@
 #ifndef PATHFINDING_H__
 #define PATHFINDING_H__
 
+#include <avarix.h>
 #include <stdint.h>
 #include <stdbool.h>
 
