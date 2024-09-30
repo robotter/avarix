@@ -191,7 +191,7 @@ class CodeGenerator:
 
 
 if __name__ == 'avarix_templatizer':
-  import importlib.utils
+  import importlib.util
   import sys
   import os
   module_name = 'avarix_templatizer.rome_transactions'
@@ -202,8 +202,8 @@ if __name__ == 'avarix_templatizer':
     else:
       spec = importlib.util.find_spec(messages)
       spec.name = module_name
-  mod = importlib.util.module_from_spec(spec)
-  spec.loader.exec_module(mod)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
   if len(rome.messages) == 0:
     raise RuntimeError("no defined messages, define ROME_MESSAGES in Makefile")
   template_locals = {'self': CodeGenerator()}
