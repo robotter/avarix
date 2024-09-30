@@ -191,16 +191,19 @@ class CodeGenerator:
 
 
 if __name__ == 'avarix_templatizer':
-  import imp
+  import importlib.utils
   import sys
   import os
   module_name = 'avarix_templatizer.rome_transactions'
   if len(sys.argv) >= 2:
     messages = sys.argv[1]
     if '/' in messages or os.path.exists(messages):
-      mod = imp.load_source(module_name, messages)
+      spec = importlib.util.spec_from_file_location(module_name, messages)
     else:
-      mod = imp.load_module(module_name, *imp.find_module(messages))
+      spec = importlib.util.find_spec(messages)
+      spec.name = module_name
+  mod = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(mod)
   if len(rome.messages) == 0:
     raise RuntimeError("no defined messages, define ROME_MESSAGES in Makefile")
   template_locals = {'self': CodeGenerator()}

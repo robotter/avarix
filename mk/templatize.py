@@ -58,12 +58,15 @@ def main():
 
   args = parser.parse_args()
 
-  import imp
+  import importlib.util
   sys.argv = [args.locals] + args.args
   if '/' in args.locals or os.path.exists(args.locals):
-    mod = imp.load_source(module_name, args.locals)
+    spec = importlib.util.spec_from_file_location(module_name, args.locals)
   else:
-    mod = imp.load_module(module_name, *imp.find_module(args.locals))
+    spec = importlib.util.find_spec(args.locals)
+    spec.name = module_name
+  mod = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(mod)
   loc = mod.template_locals
 
   if len(args.inputs) == 1:
